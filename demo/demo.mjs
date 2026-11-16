@@ -16,6 +16,7 @@
 // To have Playwright record the page itself, set DEMO_VIDEO to the file you want.
 // An .mp4 is converted from Playwright's WebM recording by your own ffmpeg:
 //   DEMO_VIDEO=demo.mp4 node demo/demo.mjs
+// A plain file name is saved in this demo folder (demo/demo.mp4); a path with a folder is used as given.
 // Playwright records with its own copy of ffmpeg; if it's missing, the script says how to get it.
 //
 // Note: the demo saves its program as main.py on the Pico (replacing any main.py there)
@@ -30,7 +31,8 @@ import path from 'node:path';
 
 const LIVE = 'https://romilly.github.io/pico-pipette/';
 const PACE = Number(process.env.DEMO_PACE) || 1;
-const PROFILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '.chrome-profile');
+const DEMO_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROFILE = path.join(DEMO_DIR, '.chrome-profile');
 const SIZE = { width: 1280, height: 900 };
 
 const PROGRAM = `from machine import Pin
@@ -248,7 +250,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       'With no address, the demo uses the live site.');
     process.exit(1);
   }
-  const video = process.env.DEMO_VIDEO;
+  const name = process.env.DEMO_VIDEO;
+  const video = name && (name.includes('/') ? name : path.join(DEMO_DIR, name));   // plain names go in demo/
   const recordingDir = video && fs.mkdtempSync(path.join(os.tmpdir(), 'pipette-demo-'));
   let context;
   try {
@@ -270,15 +273,27 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const page = context.pages()[0] ?? await context.newPage();
   await page.goto(url);
   console.log('Running the demo. If a port chooser appears, pick your Pico.');
+  let failure;
   try {
     await runDemo(page);
-  } finally {
     await pause(page, 1);
-    await context.close();
+  } catch (e) {
+    failure = e;   // still save whatever was recorded, then report the problem
+  } finally {
+    await context.close().catch(() => {});
   }
   if (video) {
-    saveVideo(await page.video().path(), video);
-    fs.rmSync(recordingDir, { recursive: true, force: true });
-    console.log(`Saved the recording as ${video}`);
+    const webm = await page.video()?.path().catch(() => null);
+    if (webm && fs.existsSync(webm)) {
+      saveVideo(webm, video);
+      fs.rmSync(recordingDir, { recursive: true, force: true });
+      console.log(`Saved the recording as ${path.resolve(video)}${failure ? ' (the demo stopped early)' : ''}`);
+    } else {
+      console.error(`No recording was made (looked in ${recordingDir}).`);
+    }
+  }
+  if (failure) {
+    console.error(`The demo stopped: ${failure.message.split('\n')[0]}`);
+    process.exit(1);
   }
 }
