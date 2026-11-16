@@ -160,6 +160,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }),
     headless: false,
     viewport: { width: 1280, height: 900 },
+    chromiumSandbox: true,                    // Playwright otherwise adds --no-sandbox, and Chrome shows a warning bar
+    ignoreDefaultArgs: ['--enable-automation'], // hides the "controlled by automated test software" bar
   });
   const page = context.pages()[0] ?? await context.newPage();
   await page.goto(url);
