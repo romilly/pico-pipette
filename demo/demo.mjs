@@ -1,5 +1,5 @@
 // A scripted demo of Pico Pipette, for screen recording. Playwright drives your own Chrome
-// while you record the window (and the Pico, with a camera) using OBS or similar.
+// while you record the window with a screen recorder (and the Pico with a camera).
 //
 //   node demo/demo.mjs                          uses the live site
 //   node demo/demo.mjs http://localhost:8000/   uses a local copy
@@ -13,16 +13,25 @@
 // To slow everything down (or speed it up), set DEMO_PACE: 1.5 is half as slow again, 0.8 is quicker.
 //   DEMO_PACE=1.5 node demo/demo.mjs
 //
+// To have Playwright record the page itself, set DEMO_VIDEO to the file you want.
+// An .mp4 is converted from Playwright's WebM recording by your own ffmpeg:
+//   DEMO_VIDEO=demo.mp4 node demo/demo.mjs
+// Playwright records with its own copy of ffmpeg; if it's missing, the script says how to get it.
+//
 // Note: the demo saves its program as main.py on the Pico (replacing any main.py there)
 // and installs the ssd1306 package into /lib.
 
 import { chromium } from 'playwright-core';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const LIVE = 'https://romilly.github.io/pico-pipette/';
 const PACE = Number(process.env.DEMO_PACE) || 1;
 const PROFILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '.chrome-profile');
+const SIZE = { width: 1280, height: 900 };
 
 const PROGRAM = `from machine import Pin
 import time
@@ -72,12 +81,14 @@ async function typeProgram(page, code) {
   await page.keyboard.type(code, { delay: typingDelay(30) });
 }
 
-// Point at the first occurrence of `from` in the editor, select it, and type `to` over it
-async function edit(page, from, to) {
-  const spot = await page.evaluate(from => {
+// Point at the first occurrence of `from` in the editor, select it, and type `to` over it.
+// `within` picks which occurrence: the first `from` inside the first occurrence of `within`.
+async function edit(page, from, to, { within = from } = {}) {
+  const spot = await page.evaluate(({ from, within }) => {
     const editor = document.getElementById('editor');
-    const start = editor.value.indexOf(from);
-    if (start < 0) throw new Error(`"${from}" is not in the editor`);
+    const outer = editor.value.indexOf(within);
+    if (outer < 0 || !within.includes(from)) throw new Error(`"${from}" in "${within}" is not in the editor`);
+    const start = outer + within.indexOf(from);
     // Where that text is on screen: monospace, so count lines and columns
     const before = editor.value.slice(0, start).split('\n');
     const style = getComputedStyle(editor);
@@ -90,7 +101,7 @@ async function edit(page, from, to) {
       x: box.left + parseFloat(style.paddingLeft) + (before.at(-1).length + from.length / 2) * charWidth - editor.scrollLeft,
       y: box.top + parseFloat(style.paddingTop) + (before.length - 0.5) * parseFloat(style.lineHeight) - editor.scrollTop,
     };
-  }, from);
+  }, { from, within });
   await page.mouse.move(spot.x, spot.y, { steps: Math.round(25 * PACE) });
   await page.evaluate(({ start, end }) => {
     const editor = document.getElementById('editor');
@@ -173,7 +184,7 @@ export async function runDemo(page) {
   await pause(page, 2.5);
 
   await caption(page, 'Make a mistake…');
-  await edit(page, '    led.toggle', '    leed.toggle');
+  await edit(page, 'led', 'leed', { within: 'led.toggle' });
   await pause(page, 1);
   await caption(page, '…and Pipette shows you where it went wrong');
   await run(page);
@@ -213,17 +224,44 @@ export async function runDemo(page) {
   await caption(page, '');
 }
 
+// --- saving Playwright's recording
+
+// Playwright records WebM. Save it as `target`, converting to MP4 with the system's ffmpeg if asked.
+export function saveVideo(webm, target) {
+  if (!/\.mp4$/i.test(target)) {
+    fs.copyFileSync(webm, target);
+    return;
+  }
+  const result = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', webm,
+    '-c:v', 'libx264', '-crf', '18', '-preset', 'slow', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', target],
+  { stdio: 'inherit' });
+  if (result.error) throw new Error(`Could not run ffmpeg to make ${target}: ${result.error.message}. The WebM recording is ${webm}`);
+  if (result.status !== 0) throw new Error(`ffmpeg could not convert the recording. The WebM recording is ${webm}`);
+}
+
 // --- run it in your own Chrome
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const url = process.argv[2] ?? LIVE;
-  const context = await chromium.launchPersistentContext(PROFILE, {
-    ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }),
-    headless: false,
-    viewport: { width: 1280, height: 900 },
-    chromiumSandbox: true,                    // Playwright otherwise adds --no-sandbox, and Chrome shows a warning bar
-    ignoreDefaultArgs: ['--enable-automation'], // hides the "controlled by automated test software" bar
-  });
+  const video = process.env.DEMO_VIDEO;
+  const recordingDir = video && fs.mkdtempSync(path.join(os.tmpdir(), 'pipette-demo-'));
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(PROFILE, {
+      ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }),
+      headless: false,
+      viewport: SIZE,
+      chromiumSandbox: true,                      // Playwright otherwise adds --no-sandbox, and Chrome shows a warning bar
+      ignoreDefaultArgs: ['--enable-automation'], // hides the "controlled by automated test software" bar
+      ...(video ? { recordVideo: { dir: recordingDir, size: SIZE } } : {}),
+    });
+  } catch (e) {
+    if (/ffmpeg/i.test(e.message)) {
+      console.error('Playwright needs its own copy of ffmpeg to record. Get it once with:\n  npx playwright-core install ffmpeg');
+      process.exit(1);
+    }
+    throw e;
+  }
   const page = context.pages()[0] ?? await context.newPage();
   await page.goto(url);
   console.log('Running the demo. If a port chooser appears, pick your Pico.');
@@ -232,5 +270,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   } finally {
     await pause(page, 1);
     await context.close();
+  }
+  if (video) {
+    saveVideo(await page.video().path(), video);
+    fs.rmSync(recordingDir, { recursive: true, force: true });
+    console.log(`Saved the recording as ${video}`);
   }
 }

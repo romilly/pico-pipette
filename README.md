@@ -8,6 +8,7 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 
 ## What it does
 
+- **Write code** in an editor with Python syntax colouring and line numbers.
 - **Run code on the Pico** and see its output as it arrives. **Stop** a program that's still running.
 - **Find errors fast.** When a program fails, the line that caused it is highlighted in the editor,
   with the error message beside it.
@@ -64,6 +65,7 @@ src/
   picolink.js     runs code on a Pico over Web Serial, using MicroPython's raw REPL
   micropython.js  runs code in MicroPython compiled to WebAssembly (for tests, and a future "no Pico" mode)
   traceback.js    finds the failing line in a MicroPython traceback
+  highlight.js    colours Python code for the editor
   inspector.js    lists the global variables a program left behind
   picofs.js       files on the Pico: list, read, write, delete, create folders
   packages.js     installs packages the way mip does
@@ -93,7 +95,8 @@ npm test
 ## Recording a demo
 
 `demo/demo.mjs` drives a demonstration in your own Chrome, with captions, so you can record the window
-(and the Pico, with a camera) using OBS or similar. It needs a real Pico and Google Chrome:
+with a screen recorder such as SimpleScreenRecorder (and the Pico with a camera, to combine in a video editor).
+It needs a real Pico and Google Chrome:
 
 ```
 npm install
@@ -103,6 +106,9 @@ node demo/demo.mjs
 The first time, pick your Pico when the port chooser appears; after that the demo runs with no clicks.
 It shows a mouse pointer that glides to each button and edit. To slow the whole demo down or speed it up,
 set `DEMO_PACE` (for example `DEMO_PACE=1.5 node demo/demo.mjs`).
+To have Playwright record the page itself, set `DEMO_VIDEO`: `DEMO_VIDEO=demo.mp4 node demo/demo.mjs`.
+Playwright records WebM with its own copy of ffmpeg (`npx playwright-core install ffmpeg` gets it, once),
+and your own ffmpeg converts that to MP4. This records only the page, not the Pico.
 It saves its program as `main.py` on the Pico and installs `ssd1306`. See the comments in the script for more options.
 
 ## Licence

@@ -36,11 +36,23 @@
   #install-log { font-size: 0.75rem; padding: 0.4rem; margin-top: 0.35rem; min-height: 0; max-height: 8rem; overflow: auto; }
   #install-log.failed { color: #b3261e; background: #fdf0ef; }
 
-  .code { display: flex; border: 1px solid #ccc; }
-  .code textarea, .code #gutter { font: 0.95rem/1.4 ui-monospace, monospace; padding: 0.5rem; margin: 0; border: 0; }
-  .code textarea { flex: 1; resize: vertical; tab-size: 4; white-space: pre; overflow: auto; outline: none; }
-  .code textarea::selection { background: #ffd6d2; }
-  #gutter { background: #f4f4f4; color: #999; text-align: right; min-width: 2ch; overflow: hidden; user-select: none; }
+  .code { display: flex; align-items: flex-start; border: 1px solid #ccc; }
+  .code textarea, .code #gutter, .code #colour { font: 0.95rem/1.4 ui-monospace, monospace; padding: 0.5rem; margin: 0; border: 0; tab-size: 4; }
+  /* The editor is a transparent textarea over a coloured copy of the same text */
+  .editor-wrap { position: relative; flex: 1; display: flex; background: #fff; }
+  .code textarea { flex: 1; position: relative; z-index: 1; resize: vertical; white-space: pre; overflow: auto; outline: none;
+    background: transparent; color: transparent; caret-color: #111; }
+  .code textarea::selection { background: rgba(255, 120, 100, 0.3); }
+  #colour { position: absolute; inset: 0; white-space: pre; overflow: hidden; pointer-events: none; color: #222; background: none; }
+  #error-band { position: absolute; left: 0; right: 0; background: #fde2df; display: none; pointer-events: none; }
+  .tok-keyword, .tok-constant { color: #8a2be2; }
+  .tok-builtin { color: #0b6e99; }
+  .tok-name { color: #1a4fd6; }
+  .tok-string { color: #2e7d32; }
+  .tok-number { color: #b35900; }
+  .tok-comment { color: #8a8a8a; }
+  .tok-decorator { color: #a0522d; }
+  #gutter { box-sizing: border-box; background: #f4f4f4; color: #999; text-align: right; min-width: 2ch; overflow: hidden; user-select: none; }
   #gutter .error { color: #fff; background: #b3261e; display: inline-block; padding: 0 0.25rem; margin-right: -0.25rem; }
 
   pre { background: #f4f4f4; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; margin: 0; }
@@ -109,6 +121,9 @@ Works in Chrome, Edge, and Firefox 151 or later.</p>
 
   <div class="code">
   <pre id="gutter" aria-hidden="true"></pre>
+  <div class="editor-wrap">
+  <div id="error-band"></div>
+  <pre id="colour" aria-hidden="true"></pre>
   <textarea id="editor" rows="14" spellcheck="false" wrap="off">from machine import Pin
 import time
 
@@ -121,6 +136,7 @@ for i in range(10):
 
 print("done")
 </textarea>
+  </div>
   </div>
 </div>
 
@@ -135,6 +151,7 @@ print("done")
 <script type="module">
 import { PicoLink, choosePort } from './src/picolink.js';
 import { errorLine, lineRange } from './src/traceback.js';
+import { highlight } from './src/highlight.js';
 import { inspectGlobals } from './src/inspector.js';
 import { listDir, readFile, writeFile, remove, makeDir, joinPath } from './src/picofs.js';
 import { installPackage } from './src/packages.js';
@@ -148,12 +165,27 @@ let picoDir = '/';         // folder shown in the Pico files panel
 let localHandle = null;    // where "Save to computer" writes, once known (Chrome and Edge)
 let unsaved = false;
 
-// --- line numbers, with the error line marked
+// --- the editor: line numbers, colours, and a band behind the error line
 function drawGutter() {
   const count = editor.value.split('\n').length;
   $('gutter').innerHTML = Array.from({ length: count }, (_, i) =>
     i + 1 === badLine ? `<span class="error">${i + 1}</span>` : `${i + 1}`).join('\n');
-  $('gutter').scrollTop = editor.scrollTop;
+  $('colour').innerHTML = highlight(editor.value) + '\n';
+  syncScroll();
+}
+
+// Keep the line numbers, colours and error band lined up with the text as it scrolls
+function syncScroll() {
+  $('gutter').scrollTop = $('colour').scrollTop = editor.scrollTop;
+  $('colour').scrollLeft = editor.scrollLeft;
+  const band = $('error-band');
+  band.style.display = badLine ? 'block' : 'none';
+  if (badLine) {
+    const style = getComputedStyle(editor);
+    const lineHeight = parseFloat(style.lineHeight);
+    band.style.height = `${lineHeight}px`;
+    band.style.top = `${parseFloat(style.paddingTop) + (badLine - 1) * lineHeight - editor.scrollTop}px`;
+  }
 }
 
 function selectLine(n) {
@@ -180,7 +212,9 @@ editor.addEventListener('input', () => {
   badLine = null; $('where').innerHTML = ''; drawGutter();
   setUnsaved(true);
 });
-editor.addEventListener('scroll', () => { $('gutter').scrollTop = editor.scrollTop; });
+editor.addEventListener('scroll', syncScroll);
+// The line numbers are exactly as tall as the editor, which scrolls (and can be resized)
+new ResizeObserver(() => { $('gutter').style.height = `${editor.offsetHeight}px`; }).observe(editor);
 drawGutter();
 
 // --- buttons follow the connection and whatever is in progress
@@ -467,6 +501,7 @@ editor.addEventListener('keydown', e => {
   const s = editor.selectionStart;
   editor.setRangeText('    ', s, editor.selectionEnd, 'end');
   setUnsaved(true);
+  drawGutter();
 });
 </script>
 </body>
