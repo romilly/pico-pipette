@@ -243,6 +243,11 @@ export function saveVideo(webm, target) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const url = process.argv[2] ?? LIVE;
+  if (!/^https?:\/\//.test(url)) {
+    console.error(`"${url}" isn't a web address. Usage:\n  node demo/demo.mjs [http://localhost:8000/]\n` +
+      'With no address, the demo uses the live site.');
+    process.exit(1);
+  }
   const video = process.env.DEMO_VIDEO;
   const recordingDir = video && fs.mkdtempSync(path.join(os.tmpdir(), 'pipette-demo-'));
   let context;
