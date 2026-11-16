@@ -13,7 +13,8 @@
 <body>
 <h1>Check your Pico connection</h1>
 <p>Plug in a Pico running MicroPython, close Thonny or anything else using it, then click <b>Check</b>.
-When all three checks pass, go to the <a href="index.html">Pico Pipette editor</a>.</p>
+When all three checks pass, go to the <a href="index.html">Pico Pipette editor</a>.
+<a href="help.html#trouble">More help</a>.</p>
 <button id="check">Check</button>
 <ol id="results"></ol>
 <h2>What the Pico sent</h2>
@@ -69,7 +70,8 @@ $('check').onclick = async () => {
     open.pass(`(USB product ID 0x${usbProductId?.toString(16)})`);
   } catch (e) {
     return open.fail(`(${e.message})`,
-      'If the list was empty: try another USB cable (some only carry power), and check the Pico has MicroPython on it. ' +
+      'If the list was empty: close any other tab or program using the Pico (such as Thonny), unplug it and plug it back in. ' +
+      'If it is still empty, try another USB cable (some only carry power), and check the Pico has MicroPython on it. ' +
       'If the port would not open: close any other program using it; on Linux, your user may need to be in the dialout group.');
   }
 

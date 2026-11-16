@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pico Pipette: help</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 1.5rem auto 4rem; padding: 0 1rem; line-height: 1.6; color: #222; }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.2rem; }
+  h3 { font-size: 1rem; margin: 1.2rem 0 0.2rem; }
+  code { background: #f4f4f4; padding: 0 0.25rem; border-radius: 3px; font-size: 0.92em; }
+  pre { background: #f4f4f4; padding: 0.6rem 0.8rem; overflow: auto; }
+  nav { background: #f7f7f7; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.95rem; }
+  nav ol { margin: 0.25rem 0; padding-left: 1.2rem; columns: 2; }
+  .back { color: #555; }
+</style>
+</head>
+<body>
+<h1>Pico Pipette help</h1>
+<p class="back"><a href="index.html">Back to the editor</a> · <a href="check.html">Check your connection</a></p>
+
+<nav>
+  <ol>
+    <li><a href="#need">What you need</a></li>
+    <li><a href="#micropython">Putting MicroPython on a Pico</a></li>
+    <li><a href="#connect">Connecting</a></li>
+    <li><a href="#run">Running and stopping</a></li>
+    <li><a href="#errors">When something goes wrong</a></li>
+    <li><a href="#variables">Variables</a></li>
+    <li><a href="#files">Files</a></li>
+    <li><a href="#packages">Packages</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+    <li><a href="#privacy">Privacy</a></li>
+  </ol>
+</nav>
+
+<h2 id="need">What you need</h2>
+<ul>
+  <li>A Raspberry Pi Pico, Pico W, Pico 2 or Pico 2 W with MicroPython on it.</li>
+  <li>A USB cable that carries data. Some cables only carry power; they will charge a phone, but your computer won't see the Pico.</li>
+  <li>Chrome, Edge, or Firefox 151 or later, on a desktop or laptop computer.</li>
+</ul>
+
+<h2 id="micropython">Putting MicroPython on a Pico</h2>
+<ol>
+  <li>Download the MicroPython <code>.uf2</code> file for your board from
+    <a href="https://micropython.org/download/" target="_blank" rel="noopener">micropython.org</a>.
+    Each board (Pico, Pico W, Pico 2, Pico 2 W) has its own file.</li>
+  <li>Hold down the <b>BOOTSEL</b> button on the Pico while you plug it in. A drive called <code>RPI-RP2</code>
+    (or <code>RP2350</code> on a Pico 2) appears on your computer.</li>
+  <li>Copy the <code>.uf2</code> file onto that drive. The drive disappears and the Pico restarts, running MicroPython.</li>
+</ol>
+<p>This replaces the firmware the Pico was running before.</p>
+
+<h2 id="connect">Connecting</h2>
+<p>Click <b>Connect</b> and choose your Pico from the list. The list only shows Raspberry Pi boards.
+The first time, your browser asks whether this site may use your serial ports; say yes.
+Once you're connected, the files on the Pico appear on the left.</p>
+
+<h2 id="run">Running and stopping</h2>
+<p><b>Run</b> sends the program in the editor to the Pico and runs it. Its output appears under <b>Output</b> as it arrives.
+<b>Stop</b> interrupts a program that is still running, such as one with a <code>while True:</code> loop.</p>
+<p>Each run starts afresh: variables from earlier runs are cleared, but files on the Pico are kept.
+Run always uses what's in the editor, not a file saved on the Pico.</p>
+
+<h3>Tips</h3>
+<ul>
+  <li>The <kbd>Tab</kbd> key indents by four spaces.</li>
+  <li>The on-board LED is <code>Pin("LED", Pin.OUT)</code> on every kind of Pico.</li>
+</ul>
+
+<h2 id="errors">When something goes wrong</h2>
+<p>If your program stops with an error, Pipette shows you where:</p>
+<ul>
+  <li>the line's number turns red and the line is selected in the editor;</li>
+  <li>a message such as <b>Line 7</b>: <code>NameError: name 'leed' isn't defined</code> appears below the output.
+    Click the line number to jump back to it;</li>
+  <li>the full message from MicroPython (the <i>traceback</i>) is shown underneath.</li>
+</ul>
+<p>If the error happens inside one of your functions, the line inside the function is the one marked.
+Errors inside libraries are traced back to the line of your program that called them.
+When you press <b>Stop</b>, the line the program had reached is marked in the same way.</p>
+
+<h2 id="variables">Variables</h2>
+<p>When your program finishes, fails or is stopped, the <b>Variables</b> table shows the variables it left behind,
+with their types and values. After pressing Stop in a loop, for example, you can see how far the loop had got.</p>
+<ul>
+  <li>Only variables at the top level of your program are shown, not those inside functions.</li>
+  <li>Modules, functions and classes are left out, and long values are shortened.</li>
+</ul>
+
+<h2 id="files">Files</h2>
+<h3>On your computer</h3>
+<p><b>Open…</b> loads a file into the editor. <b>Save to computer</b> saves the editor using the name in the box beside it.
+In Chrome and Edge it saves back to the file you opened; in other browsers it downloads a copy.</p>
+
+<h3>On the Pico</h3>
+<ul>
+  <li>Click a file in the <b>Pico files</b> panel to open it in the editor. Click a folder to go into it, and <b>..</b> to come back.</li>
+  <li><b>Save to Pico</b> saves the editor into the folder shown, using the name in the box.</li>
+  <li><b>Save as main.py</b> saves it as <code>/main.py</code>. The Pico runs <code>main.py</code> whenever it powers up,
+    so your program will run on its own, even from a phone charger or battery. Connecting with Pipette stops it again.</li>
+  <li><b>✕</b> (shown when you point at a file) deletes it, after asking. This can't be undone. Folders must be empty before they can be deleted.</li>
+  <li><b>New folder</b> creates a folder, and <b>↻</b> refreshes the list.</li>
+</ul>
+<p>Pipette marks <b>unsaved changes</b> and asks before replacing them.</p>
+
+<h2 id="packages">Packages</h2>
+<p>Packages add extra modules, such as drivers for displays and sensors. Type a name in <b>Install a package</b> and click <b>Install</b>:</p>
+<ul>
+  <li>a name from <a href="https://github.com/micropython/micropython-lib" target="_blank" rel="noopener">micropython-lib</a>, such as <code>ssd1306</code>;</li>
+  <li>a GitHub repository, such as <code>github:org/repo</code> (also <code>gitlab:</code> and <code>codeberg:</code>);</li>
+  <li>or the web address of a <code>package.json</code>, <code>.py</code> or <code>.mpy</code> file.</li>
+</ul>
+<p>Pipette installs the package and anything it depends on into the Pico's <code>/lib</code> folder.
+Your browser does the downloading, so the Pico doesn't need Wi-Fi. Then use it in your program:</p>
+<pre>import ssd1306</pre>
+
+<h2 id="trouble">Troubleshooting</h2>
+<p>The <a href="check.html">connection checker</a> tests each step and tells you what's wrong.</p>
+
+<h3>The list of ports is empty</h3>
+<ul>
+  <li>Another browser tab or program (such as Thonny) may be using the Pico. Close it, then unplug the Pico and plug it back in.</li>
+  <li>The cable may only carry power. Try another one.</li>
+  <li>The Pico may not have MicroPython on it, or may be in BOOTSEL mode (showing up as a drive). See <a href="#micropython">Putting MicroPython on a Pico</a>.</li>
+</ul>
+
+<h3>The Pico is listed but won't connect</h3>
+<ul>
+  <li>Close any other tab or program using it, then unplug it and plug it back in.</li>
+  <li>On Linux, your user may need permission to use serial ports. Run this, then log out and back in:
+    <pre>sudo usermod -aG dialout $USER</pre></li>
+</ul>
+
+<h3>Connected, but programs don't run</h3>
+<p>The board may be running something other than MicroPython. The connection checker will tell you; if so,
+<a href="#micropython">put MicroPython on it</a>.</p>
+
+<h3>"Pico disconnected"</h3>
+<p>The Pico was unplugged or restarted. Plug it back in and click <b>Connect</b> again.</p>
+
+<h2 id="privacy">Privacy</h2>
+<p>Pico Pipette runs entirely in your browser and has no server of its own. Your programs and files go only between
+your browser and your Pico. The only other connections are the package downloads you ask for, from micropython.org,
+GitHub or the address you type.</p>
+</body>
+</html>

@@ -59,6 +59,7 @@
 <header class="top">
   <h1>Pico Pipette</h1>
   <span>Program your Raspberry Pi Pico from the browser ·
+    <a href="help.html">help</a> ·
     <a href="check.html">check your connection</a> ·
     <a href="https://github.com/romilly/pico-pipette">about</a></span>
 </header>
@@ -243,7 +244,7 @@ $('connect').onclick = async () => {
     await fileTask('Reading the Pico\'s files…', async () => { await showPicoFolder('/'); return 'Connected'; });
   } catch (e) {
     link = null;
-    refresh(`Could not connect: ${e.message}`);
+    refresh(`Could not connect: ${e.message}. Close other tabs or programs using the Pico, unplug it and plug it back in. More in Help.`);
   }
 };
 

@@ -1,7 +1,7 @@
 # Pico Pipette
 
 Program, debug and manage a Raspberry Pi Pico running MicroPython, straight from a web browser.
-There's nothing to install: plug in your Pico, open the page, and click **Connect**.
+There's nothing to install: plug in your Pico, open **https://romilly.github.io/pico-pipette/**, and click **Connect**.
 
 Pico Pipette talks to the Pico over [Web Serial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API),
 which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop computers.
@@ -17,13 +17,16 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
   **Save as main.py** makes your program run whenever the Pico powers up.
 - **Install packages** from [micropython-lib](https://github.com/micropython/micropython-lib), GitHub or a URL,
   with their dependencies. The browser downloads them, so the Pico doesn't need Wi-Fi.
-- **Check your connection** with `check.html`, which explains the common problems
-  (power-only USB cables, boards without MicroPython, Linux permissions).
+- **Check your connection** with the connection checker, which explains the common problems
+  (another tab or program holding the Pico, power-only USB cables, boards without MicroPython, Linux permissions).
+
+Not there yet: an interactive REPL, programs that use `input()`, and stepping through code line by line.
 
 ## Using it
 
-Once GitHub Pages is switched on for this repository, Pico Pipette will be at
-**https://romilly.github.io/pico-pipette/**.
+- **Editor:** https://romilly.github.io/pico-pipette/
+- **Help:** https://romilly.github.io/pico-pipette/help.html
+- **Connection checker:** https://romilly.github.io/pico-pipette/check.html
 
 To run your own copy, serve the folder over http and open it in a browser that supports Web Serial:
 
@@ -37,7 +40,9 @@ browsers only allow Web Serial and module scripts on `https://` or `localhost` p
 ## Using Pipette in your own pages
 
 The modules in `src/` have no dependencies and no build step, so a course or tutorial page can import them directly.
-`examples/blink-lesson.html` is a complete lesson page with its own code box:
+`examples/blink-lesson.html` is a complete lesson page with its own code box.
+Pages hosted elsewhere should be able to import the published copies,
+such as `https://romilly.github.io/pico-pipette/src/picolink.js`.
 
 ```js
 import { PicoLink } from './src/picolink.js';
@@ -52,6 +57,7 @@ const { stdout, stderr } = await link.run('print("Hello from the Pico")');
 
 ```
 index.html      the editor
+help.html       help for people using the editor
 check.html      the connection checker
 examples/       how other pages can use Pipette
 src/
