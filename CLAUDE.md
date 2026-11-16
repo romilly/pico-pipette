@@ -18,7 +18,8 @@ See README.md for features and layout.
 - Snippets run on the Pico wrap their work in a function and delete it afterwards, so the learner's globals stay clean.
 - It must work on Node 20.9, the version on the maintainer's machine.
 - Commit and push freely; no need to ask first.
-- Demo videos go in `demo/` (the demo script saves plain `DEMO_VIDEO` names there) and are stored with Git LFS.
+- Demo videos go in `demo/` (the demo script saves plain `DEMO_VIDEO` names there). They're kept in ordinary git, not LFS,
+  so commit only small, final versions; the main demo video is published on YouTube.
 
 ## Commands
 
