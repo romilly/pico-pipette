@@ -101,7 +101,9 @@ node demo/demo.mjs
 ```
 
 The first time, pick your Pico when the port chooser appears; after that the demo runs with no clicks.
-It saves its program as `main.py` on the Pico and installs `ssd1306`. See the comments in the script for options.
+It shows a mouse pointer that glides to each button and edit. To slow the whole demo down or speed it up,
+set `DEMO_PACE` (for example `DEMO_PACE=1.5 node demo/demo.mjs`).
+It saves its program as `main.py` on the Pico and installs `ssd1306`. See the comments in the script for more options.
 
 ## Licence
 
