@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lesson 1: Blink (a Pico Pipette example)</title>
+<!--
+  How a course page can use Pico Pipette's modules: a lesson with its own small code box.
+  Here the modules are imported from ../src/. A page hosted elsewhere can import them from
+  the published copy instead, e.g. https://romilly.github.io/pico-pipette/src/picolink.js
+-->
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 45rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  textarea { width: 100%; box-sizing: border-box; font: 0.95rem/1.4 ui-monospace, monospace; padding: 0.5rem; tab-size: 4; }
+  pre { background: #f4f4f4; padding: 0.75rem; min-height: 2rem; white-space: pre-wrap; }
+  #error { color: #b3261e; }
+  .bar { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+  #status { color: #666; }
+</style>
+</head>
+<body>
+<h1>Lesson 1: Blink</h1>
+<p>Every Pico has a small LED on the board. This program makes it blink ten times.
+Click <b>Connect</b>, choose your Pico, then click <b>Run</b>.</p>
+<p>Then try making it blink faster: change <code>0.5</code> to <code>0.1</code> and run it again.
+What happens if you misspell <code>led</code> on line 7?</p>
+
+<textarea id="code" rows="11" spellcheck="false">from machine import Pin
+import time
+
+led = Pin("LED", Pin.OUT)
+
+for i in range(10):
+    led.toggle()
+    print("blink", i)
+    time.sleep(0.5)
+
+print("done")
+</textarea>
+
+<div class="bar">
+  <button id="connect">Connect</button>
+  <button id="run" disabled>Run</button>
+  <button id="stop" disabled>Stop</button>
+  <span id="status"></span>
+</div>
+<pre id="output"></pre>
+<p id="error"></p>
+
+<script type="module">
+import { PicoLink } from '../src/picolink.js';
+import { errorLine } from '../src/traceback.js';
+
+const $ = id => document.getElementById(id);
+let link;
+
+$('connect').onclick = async () => {
+  try {
+    link = new PicoLink(await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x2E8A }] }));
+    await link.open();
+    $('connect').disabled = true;
+    $('run').disabled = false;
+    $('status').textContent = 'Connected';
+  } catch (e) {
+    $('status').textContent = `Could not connect: ${e.message}`;
+  }
+};
+
+$('run').onclick = async () => {
+  $('run').disabled = true;
+  $('stop').disabled = false;
+  $('error').textContent = '';
+  const { stdout, stderr } = await link.run($('code').value, {
+    onOutput: ({ stdout }) => { $('output').textContent = stdout; },
+  });
+  $('output').textContent = stdout;
+  if (stderr) {
+    const line = errorLine(stderr);
+    const message = stderr.trim().split('\n').at(-1);
+    $('error').textContent = line ? `Line ${line}: ${message}` : message;
+  }
+  $('run').disabled = false;
+  $('stop').disabled = true;
+};
+
+$('stop').onclick = () => link.interrupt();
+</script>
+</body>
+</html>

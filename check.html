@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pico Pipette: check your connection</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  .pass { color: #0a7d32; } .fail { color: #b3261e; } .pending { color: #666; }
+  .hint { color: #444; font-size: 0.9rem; margin: 0.25rem 0 0.75rem; }
+  pre { background: #f4f4f4; padding: 1rem; white-space: pre-wrap; max-height: 20rem; overflow: auto; }
+</style>
+</head>
+<body>
+<h1>Check your Pico connection</h1>
+<p>Plug in a Pico running MicroPython, close Thonny or anything else using it, then click <b>Check</b>.
+When all three checks pass, go to the <a href="index.html">Pico Pipette editor</a>.</p>
+<button id="check">Check</button>
+<ol id="results"></ol>
+<h2>What the Pico sent</h2>
+<pre id="log"></pre>
+
+<script type="module">
+import { PicoLink } from './src/picolink.js';
+
+const RASPBERRY_PI_VID = 0x2E8A;
+const $ = id => document.getElementById(id);
+
+function step(name) {
+  const li = document.createElement('li');
+  li.className = 'pending';
+  li.textContent = `${name}: checking…`;
+  $('results').append(li);
+  return {
+    pass(detail = '') { li.className = 'pass'; li.textContent = `PASS ${name} ${detail}`; },
+    fail(detail, hint) {
+      li.className = 'fail';
+      li.textContent = `FAIL ${name} ${detail}`;
+      const p = document.createElement('p');
+      p.className = 'hint';
+      p.textContent = hint;
+      li.append(p);
+    },
+  };
+}
+
+// Show control characters, so the raw exchange is readable
+const visible = text => text.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, c => `<${c.charCodeAt(0).toString(16).padStart(2, '0')}>`);
+
+$('check').onclick = async () => {
+  $('results').innerHTML = '';
+  $('log').textContent = '';
+
+  const api = step('Your browser can use Web Serial');
+  if (!('serial' in navigator)) {
+    return api.fail('', window.isSecureContext
+      ? 'Use Chrome, Edge, or Firefox 151 or later, on a desktop or laptop.'
+      : 'This page must be opened over https:// or from localhost.');
+  }
+  api.pass();
+
+  const open = step('A Pico is connected');
+  let link;
+  try {
+    const port = await navigator.serial.requestPort({ filters: [{ usbVendorId: RASPBERRY_PI_VID }] });
+    link = new PicoLink(port);
+    link.onData = text => { $('log').textContent += visible(text); };
+    await link.open();
+    const { usbProductId } = port.getInfo();
+    open.pass(`(USB product ID 0x${usbProductId?.toString(16)})`);
+  } catch (e) {
+    return open.fail(`(${e.message})`,
+      'If the list was empty: try another USB cable (some only carry power), and check the Pico has MicroPython on it. ' +
+      'If the port would not open: close any other program using it; on Linux, your user may need to be in the dialout group.');
+  }
+
+  const trip = step('The Pico runs MicroPython code');
+  try {
+    const a = Math.floor(Math.random() * 1000), b = Math.floor(Math.random() * 1000);
+    const { stdout, stderr } = await link.run(
+      `import sys\nprint(sys.platform, sys.implementation.name, ${a} * ${b})`, { reset: false });
+    const expected = `rp2 micropython ${a * b}`;
+    if (stdout.trim() === expected) trip.pass(`(it answered "${stdout.trim()}")`);
+    else trip.fail(`(expected "${expected}", got "${(stdout + stderr).trim()}")`,
+      'The board answered but not as MicroPython on a Pico would. Install MicroPython: hold BOOTSEL while plugging in, ' +
+      'then copy the MicroPython .uf2 file for your board onto the drive that appears.');
+  } catch (e) {
+    trip.fail('(no answer)', 'The board did not respond like MicroPython. It may be running other firmware: ' +
+      'hold BOOTSEL while plugging in and copy the MicroPython .uf2 file for your board onto the drive that appears.');
+  } finally {
+    await link.close();
+  }
+};
+</script>
+</body>
+</html>

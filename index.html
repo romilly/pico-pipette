@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pico Pipette</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 1.5rem auto; padding: 0 1rem; line-height: 1.5; }
+  .top { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .top h1 { margin: 0; font-size: 1.6rem; }
+  .top span, .intro { color: #555; }
+  .intro { margin: 0.5rem 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.75rem 0; }
+  #status { color: #666; }
+  #filename { font: 0.95rem ui-monospace, monospace; width: 12rem; padding: 0.15rem 0.4rem; }
+  #unsaved { color: #8a5a00; font-size: 0.9rem; }
+
+  .workspace { display: grid; grid-template-columns: 15rem 1fr; gap: 1rem; align-items: start; }
+  #files { border: 1px solid #ccc; font-size: 0.9rem; }
+  #files.busy { opacity: 0.5; pointer-events: none; }
+  #files header { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0.5rem; background: #f4f4f4; border-bottom: 1px solid #ccc; }
+  #files header span { display: flex; gap: 0.25rem; }
+  #files header button { font-size: 0.8rem; }
+  #pico-path { padding: 0.25rem 0.5rem; color: #666; font-family: ui-monospace, monospace; border-bottom: 1px solid #eee; }
+  #pico-files { list-style: none; margin: 0; padding: 0; max-height: 18rem; overflow: auto; }
+  #pico-files li { display: flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.5rem; }
+  #pico-files li:hover { background: #f4f4f4; }
+  #pico-files .name { flex: 1; text-align: left; background: none; border: 0; padding: 0.1rem 0; cursor: pointer; font: inherit; font-family: ui-monospace, monospace; }
+  #pico-files .size { color: #999; font-size: 0.8rem; }
+  #pico-files .delete { background: none; border: 0; color: #b3261e; cursor: pointer; visibility: hidden; }
+  #pico-files li:hover .delete { visibility: visible; }
+  #files .none { color: #999; padding: 0.5rem; margin: 0; }
+  #packages { border-top: 1px solid #ccc; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  #packages .row { display: flex; gap: 0.25rem; }
+  #packages input { flex: 1; min-width: 0; font: 0.85rem ui-monospace, monospace; padding: 0.15rem 0.3rem; }
+  #packages small { color: #666; line-height: 1.3; }
+  #install-log { font-size: 0.75rem; padding: 0.4rem; margin-top: 0.35rem; min-height: 0; max-height: 8rem; overflow: auto; }
+  #install-log.failed { color: #b3261e; background: #fdf0ef; }
+
+  .code { display: flex; border: 1px solid #ccc; }
+  .code textarea, .code #gutter { font: 0.95rem/1.4 ui-monospace, monospace; padding: 0.5rem; margin: 0; border: 0; }
+  .code textarea { flex: 1; resize: vertical; tab-size: 4; white-space: pre; overflow: auto; outline: none; }
+  .code textarea::selection { background: #ffd6d2; }
+  #gutter { background: #f4f4f4; color: #999; text-align: right; min-width: 2ch; overflow: hidden; user-select: none; }
+  #gutter .error { color: #fff; background: #b3261e; display: inline-block; padding: 0 0.25rem; margin-right: -0.25rem; }
+
+  pre { background: #f4f4f4; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; margin: 0; }
+  #stderr { color: #b3261e; background: #fdf0ef; }
+  #stderr:empty, #where:empty { display: none; }
+  #where { margin: 0.5rem 0; color: #b3261e; }
+  #where a { color: inherit; font-weight: bold; }
+  #variables table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  #variables th, #variables td { text-align: left; padding: 0.25rem 0.75rem; border-bottom: 1px solid #e5e5e5; }
+  #variables td { font-family: ui-monospace, monospace; }
+  #variables td:nth-child(2) { color: #666; }
+  #variables .none { color: #666; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Pico Pipette</h1>
+  <span>Program your Raspberry Pi Pico from the browser ·
+    <a href="check.html">check your connection</a> ·
+    <a href="https://github.com/romilly/pico-pipette">about</a></span>
+</header>
+<p class="intro">Plug in a Pico running <a href="https://micropython.org/download/RPI_PICO/" target="_blank" rel="noopener">MicroPython</a>,
+click <b>Connect</b> and choose it from the list, then <b>Run</b> the program below.
+Works in Chrome, Edge, and Firefox 151 or later.</p>
+
+<div class="bar">
+  <button id="connect">Connect</button>
+  <button id="run" disabled>Run</button>
+  <button id="stop" disabled>Stop</button>
+  <span id="status">Not connected</span>
+</div>
+
+<div class="bar">
+  <input id="filename" value="blink.py" aria-label="File name" spellcheck="false">
+  <button id="open">Open…</button>
+  <button id="save-local">Save to computer</button>
+  <button id="save-pico" disabled>Save to Pico</button>
+  <button id="save-main" disabled>Save as main.py</button>
+  <span id="unsaved"></span>
+</div>
+
+<div class="workspace">
+  <section id="files">
+    <header>
+      <b>Pico files</b>
+      <span>
+        <button id="new-folder" title="New folder" disabled>New folder</button>
+        <button id="reload" title="Refresh" disabled>↻</button>
+      </span>
+    </header>
+    <div id="pico-path">/</div>
+    <ul id="pico-files"></ul>
+    <p class="none" id="files-note">Connect to see the files on your Pico.</p>
+    <form id="packages">
+      <b>Install a package</b>
+      <div class="row">
+        <input id="package" placeholder="e.g. ssd1306" spellcheck="false" aria-label="Package name or URL">
+        <button id="install" disabled>Install</button>
+      </div>
+      <small>A <a href="https://github.com/micropython/micropython-lib" target="_blank" rel="noopener">micropython-lib</a> name, github:org/repo, or a URL</small>
+      <pre id="install-log" hidden></pre>
+    </form>
+  </section>
+
+  <div class="code">
+  <pre id="gutter" aria-hidden="true"></pre>
+  <textarea id="editor" rows="14" spellcheck="false" wrap="off">from machine import Pin
+import time
+
+led = Pin("LED", Pin.OUT)
+
+for i in range(10):
+    led.toggle()
+    print("blink", i)
+    time.sleep(0.5)
+
+print("done")
+</textarea>
+  </div>
+</div>
+
+<h2>Output</h2>
+<pre id="stdout"></pre>
+<p id="where"></p>
+<pre id="stderr"></pre>
+
+<h2>Variables</h2>
+<div id="variables"><p class="none">Run your program to see its variables when it finishes or stops.</p></div>
+
+<script type="module">
+import { PicoLink } from './src/picolink.js';
+import { errorLine, lineRange } from './src/traceback.js';
+import { inspectGlobals } from './src/inspector.js';
+import { listDir, readFile, writeFile, remove, makeDir, joinPath } from './src/picofs.js';
+import { installPackage } from './src/packages.js';
+import { openLocalFile, saveLocalFile } from './src/localfiles.js';
+
+const $ = id => document.getElementById(id);
+const editor = $('editor');
+const RASPBERRY_PI_VID = 0x2E8A;
+let link = null, badLine = null;
+let busy = false;          // false, 'running' (a program) or 'files' (a file operation)
+let picoDir = '/';         // folder shown in the Pico files panel
+let localHandle = null;    // where "Save to computer" writes, once known (Chrome and Edge)
+let unsaved = false;
+
+// --- line numbers, with the error line marked
+function drawGutter() {
+  const count = editor.value.split('\n').length;
+  $('gutter').innerHTML = Array.from({ length: count }, (_, i) =>
+    i + 1 === badLine ? `<span class="error">${i + 1}</span>` : `${i + 1}`).join('\n');
+  $('gutter').scrollTop = editor.scrollTop;
+}
+
+function selectLine(n) {
+  const range = lineRange(editor.value, n);
+  if (!range) return;
+  editor.focus();
+  editor.setSelectionRange(...range);
+}
+
+function markError(stderr) {
+  badLine = errorLine(stderr);
+  const message = stderr.trim().split('\n').at(-1).trim();
+  $('where').innerHTML = '';
+  if (badLine) {
+    $('where').innerHTML = `<a href="#">Line ${badLine}</a>: `;
+    $('where').append(message);
+    $('where').querySelector('a').onclick = e => { e.preventDefault(); selectLine(badLine); };
+    selectLine(badLine);
+  }
+  drawGutter();
+}
+
+editor.addEventListener('input', () => {
+  badLine = null; $('where').innerHTML = ''; drawGutter();
+  setUnsaved(true);
+});
+editor.addEventListener('scroll', () => { $('gutter').scrollTop = editor.scrollTop; });
+drawGutter();
+
+// --- buttons follow the connection and whatever is in progress
+function refresh(status) {
+  if (status) $('status').textContent = status;
+  const ready = !!link && !busy;
+  $('connect').disabled = !!link;
+  for (const id of ['run', 'save-pico', 'save-main', 'new-folder', 'reload', 'install']) $(id).disabled = !ready;
+  $('stop').disabled = busy !== 'running';
+  $('files').classList.toggle('busy', !!busy);
+}
+
+function setUnsaved(value) {
+  unsaved = value;
+  $('unsaved').textContent = unsaved ? '● unsaved changes' : '';
+}
+
+function okToReplaceEditor() {
+  return !unsaved || confirm('Your changes in the editor have not been saved. Replace them anyway?');
+}
+
+function fileName() {
+  const name = $('filename').value.trim();
+  if (!name) { refresh('Type a file name first'); $('filename').focus(); }
+  return name;
+}
+
+function loadIntoEditor(name, text) {
+  $('filename').value = name;
+  editor.value = text;
+  badLine = null; $('where').innerHTML = '';
+  drawGutter();
+  setUnsaved(false);
+}
+
+$('filename').addEventListener('input', () => { localHandle = null; });
+
+// Runs a file operation on the Pico, keeping other buttons out of the way meanwhile
+async function fileTask(message, action) {
+  busy = 'files';
+  refresh(message);
+  try {
+    const done = await action();
+    if (done) refresh(done);
+  } catch (e) {
+    refresh(`${message.replace(/…$/, '')} failed: ${e.message}`);
+  } finally {
+    busy = false;
+    refresh();
+  }
+}
+
+// --- connecting
+$('connect').onclick = async () => {
+  if (!('serial' in navigator)) return refresh('This browser has no Web Serial: use Chrome, Edge or Firefox 151+');
+  try {
+    const port = await navigator.serial.requestPort({ filters: [{ usbVendorId: RASPBERRY_PI_VID }] });
+    link = new PicoLink(port);
+    await link.open();
+    refresh('Connected');
+    await fileTask('Reading the Pico\'s files…', async () => { await showPicoFolder('/'); return 'Connected'; });
+  } catch (e) {
+    link = null;
+    refresh(`Could not connect: ${e.message}`);
+  }
+};
+
+navigator.serial?.addEventListener('disconnect', () => {
+  link = null; busy = false;
+  $('pico-files').innerHTML = '';
+  $('files-note').textContent = 'Connect to see the files on your Pico.';
+  $('files-note').hidden = false;
+  refresh('Pico disconnected');
+});
+
+// --- files on the computer
+$('open').onclick = async () => {
+  if (!okToReplaceEditor()) return;
+  try {
+    const file = await openLocalFile();
+    if (!file) return;
+    loadIntoEditor(file.name, file.text);
+    localHandle = file.handle;
+    refresh(`Opened ${file.name} from your computer`);
+  } catch (e) {
+    refresh(`Could not open the file: ${e.message}`);
+  }
+};
+
+$('save-local').onclick = async () => {
+  const name = fileName();
+  if (!name) return;
+  try {
+    const handle = await saveLocalFile(name, editor.value, localHandle);
+    if (handle === undefined) return;            // cancelled
+    localHandle = handle;
+    if (handle?.name) $('filename').value = handle.name;
+    setUnsaved(false);
+    refresh(handle ? `Saved ${handle.name} on your computer` : `Downloaded ${name}`);
+  } catch (e) {
+    refresh(`Could not save the file: ${e.message}`);
+  }
+};
+
+// --- files on the Pico
+async function showPicoFolder(dir) {
+  const entries = await listDir(link, dir);
+  picoDir = dir;
+  $('pico-path').textContent = dir;
+  const list = $('pico-files');
+  list.innerHTML = '';
+  if (dir !== '/') addRow(list, { label: '📁 ..', onOpen: () => openFolder(dir.replace(/\/[^/]+\/?$/, '') || '/') });
+  for (const entry of entries) {
+    const path = joinPath(dir, entry.name);
+    addRow(list, entry.isDir
+      ? { label: `📁 ${entry.name}`, onOpen: () => openFolder(path), onDelete: () => deleteFromPico(path) }
+      : { label: entry.name, size: entry.size, onOpen: () => openFromPico(path, entry.name), onDelete: () => deleteFromPico(path) });
+  }
+  $('files-note').hidden = entries.length > 0;
+  $('files-note').textContent = 'This folder is empty.';
+}
+
+function addRow(list, { label, size, onOpen, onDelete }) {
+  const li = document.createElement('li');
+  const name = document.createElement('button');
+  name.className = 'name';
+  name.textContent = label;
+  name.onclick = onOpen;
+  li.append(name);
+  if (size !== undefined) {
+    const s = document.createElement('span');
+    s.className = 'size';
+    s.textContent = size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`;
+    li.append(s);
+  }
+  if (onDelete) {
+    const del = document.createElement('button');
+    del.className = 'delete';
+    del.title = `Delete ${label.replace('📁 ', '')}`;
+    del.textContent = '✕';
+    del.onclick = onDelete;
+    li.append(del);
+  }
+  list.append(li);
+}
+
+const openFolder = dir => fileTask('Reading the Pico\'s files…', async () => { await showPicoFolder(dir); return `Showing ${dir}`; });
+
+async function openFromPico(path, name) {
+  if (!okToReplaceEditor()) return;
+  await fileTask(`Opening ${path}…`, async () => {
+    loadIntoEditor(name, await readFile(link, path));
+    localHandle = null;
+    return `Opened ${path} from the Pico`;
+  });
+}
+
+async function saveToPico(path, done) {
+  await fileTask(`Saving ${path} to the Pico…`, async () => {
+    await writeFile(link, path, editor.value, {
+      onProgress: p => { if (p < 1) refresh(`Saving ${path} to the Pico… ${Math.round(p * 100)}%`); },
+    });
+    setUnsaved(false);
+    await showPicoFolder(picoDir);
+    return done;
+  });
+}
+
+$('save-pico').onclick = () => {
+  const name = fileName();
+  if (name) saveToPico(joinPath(picoDir, name), `Saved ${joinPath(picoDir, name)} on the Pico`);
+};
+
+$('save-main').onclick = () =>
+  saveToPico('/main.py', 'Saved /main.py: the Pico will run it whenever it powers up');
+
+async function deleteFromPico(path) {
+  if (!confirm(`Delete ${path} from the Pico? This can't be undone.`)) return;
+  await fileTask(`Deleting ${path}…`, async () => {
+    await remove(link, path);
+    await showPicoFolder(picoDir);
+    return `Deleted ${path}`;
+  });
+}
+
+$('new-folder').onclick = async () => {
+  const name = prompt('Name of the new folder:')?.trim();
+  if (!name) return;
+  await fileTask(`Creating ${name}…`, async () => {
+    await makeDir(link, joinPath(picoDir, name));
+    await showPicoFolder(picoDir);
+    return `Created ${joinPath(picoDir, name)}`;
+  });
+};
+
+$('reload').onclick = () => openFolder(picoDir);
+
+// --- packages (downloaded by the browser, written into the Pico's lib folder)
+$('packages').onsubmit = async e => {
+  e.preventDefault();
+  const spec = $('package').value.trim();
+  if (!spec) return $('package').focus();
+  const out = $('install-log');
+  out.hidden = false;
+  out.classList.remove('failed');
+  out.textContent = '';
+  const log = line => { out.textContent += line + '\n'; out.scrollTop = out.scrollHeight; };
+  busy = 'files';
+  refresh(`Installing ${spec}…`);
+  try {
+    const files = await installPackage(link, spec, { log });
+    log(`Done: ${files.length} file${files.length === 1 ? '' : 's'} installed`);
+    refresh(`Installed ${spec}`);
+    $('package').value = '';
+    try { await showPicoFolder(picoDir); } catch { /* the list is only a convenience */ }
+  } catch (err) {
+    log(err.message);
+    out.classList.add('failed');
+    refresh(`Could not install ${spec}`);
+  } finally {
+    busy = false;
+    refresh();
+  }
+};
+
+// --- running programs
+function showVariables(rows) {
+  const box = $('variables');
+  box.innerHTML = '';
+  if (!rows.length) {
+    box.innerHTML = '<p class="none">No variables.</p>';
+    return;
+  }
+  const table = document.createElement('table');
+  table.innerHTML = '<tr><th>Name</th><th>Type</th><th>Value</th></tr>';
+  for (const { name, type, value } of rows) {
+    const tr = table.insertRow();
+    for (const text of [name, type, value]) tr.insertCell().textContent = text;
+  }
+  box.append(table);
+}
+
+$('run').onclick = async () => {
+  busy = 'running';
+  refresh('Running…');
+  $('stdout').textContent = $('stderr').textContent = '';
+  $('variables').innerHTML = '';
+  markError('');
+  const show = ({ stdout, stderr }) => { $('stdout').textContent = stdout; $('stderr').textContent = stderr; };
+  try {
+    const result = await link.run(editor.value, { onOutput: show });
+    show(result);
+    markError(result.stderr);
+    busy = 'files';
+    refresh('Reading variables…');
+    try {
+      showVariables(await inspectGlobals(link));
+    } catch (e) {
+      $('variables').innerHTML = '<p class="none"></p>';
+      $('variables').firstChild.textContent = `Could not read the variables: ${e.message}`;
+    }
+    refresh(/KeyboardInterrupt/.test(result.stderr) ? 'Stopped'
+      : result.stderr ? 'Finished with an error' : 'Finished');
+  } catch (e) {
+    $('stderr').textContent = e.message;
+    refresh('Something went wrong talking to the Pico');
+  } finally {
+    busy = false;
+    refresh();
+  }
+};
+
+$('stop').onclick = () => link.interrupt();
+
+// Tab inserts four spaces rather than leaving the editor
+editor.addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  e.preventDefault();
+  const s = editor.selectionStart;
+  editor.setRangeText('    ', s, editor.selectionEnd, 'end');
+  setUnsaved(true);
+});
+</script>
+</body>
+</html>

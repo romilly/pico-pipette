@@ -1,0 +1,12 @@
+{
+  "name": "pico-pipette",
+  "version": "0.1.0",
+  "description": "Program, debug and manage a Raspberry Pi Pico running MicroPython, from a web browser",
+  "type": "module",
+  "license": "MIT",
+  "repository": "github:romilly/pico-pipette",
+  "scripts": { "test": "node --test" },
+  "devDependencies": {
+    "@micropython/micropython-webassembly-pyscript": "^1.29.0-6"
+  }
+}
