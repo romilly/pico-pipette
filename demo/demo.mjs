@@ -270,15 +270,27 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const page = context.pages()[0] ?? await context.newPage();
   await page.goto(url);
   console.log('Running the demo. If a port chooser appears, pick your Pico.');
+  let failure;
   try {
     await runDemo(page);
-  } finally {
     await pause(page, 1);
-    await context.close();
+  } catch (e) {
+    failure = e;   // still save whatever was recorded, then report the problem
+  } finally {
+    await context.close().catch(() => {});
   }
   if (video) {
-    saveVideo(await page.video().path(), video);
-    fs.rmSync(recordingDir, { recursive: true, force: true });
-    console.log(`Saved the recording as ${video}`);
+    const webm = await page.video()?.path().catch(() => null);
+    if (webm && fs.existsSync(webm)) {
+      saveVideo(webm, video);
+      fs.rmSync(recordingDir, { recursive: true, force: true });
+      console.log(`Saved the recording as ${path.resolve(video)}${failure ? ' (the demo stopped early)' : ''}`);
+    } else {
+      console.error(`No recording was made (looked in ${recordingDir}).`);
+    }
+  }
+  if (failure) {
+    console.error(`The demo stopped: ${failure.message.split('\n')[0]}`);
+    process.exit(1);
   }
 }
