@@ -90,6 +90,19 @@ npm install
 npm test
 ```
 
+## Recording a demo
+
+`demo/demo.mjs` drives a demonstration in your own Chrome, with captions, so you can record the window
+(and the Pico, with a camera) using OBS or similar. It needs a real Pico and Google Chrome:
+
+```
+npm install
+node demo/demo.mjs
+```
+
+The first time, pick your Pico when the port chooser appears; after that the demo runs with no clicks.
+It saves its program as `main.py` on the Pico and installs `ssd1306`. See the comments in the script for options.
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).

@@ -21,9 +21,8 @@ When all three checks pass, go to the <a href="index.html">Pico Pipette editor</
 <pre id="log"></pre>
 
 <script type="module">
-import { PicoLink } from './src/picolink.js';
+import { PicoLink, choosePort } from './src/picolink.js';
 
-const RASPBERRY_PI_VID = 0x2E8A;
 const $ = id => document.getElementById(id);
 
 function step(name) {
@@ -62,7 +61,7 @@ $('check').onclick = async () => {
   const open = step('A Pico is connected');
   let link;
   try {
-    const port = await navigator.serial.requestPort({ filters: [{ usbVendorId: RASPBERRY_PI_VID }] });
+    const port = await choosePort(navigator.serial);
     link = new PicoLink(port);
     link.onData = text => { $('log').textContent += visible(text); };
     await link.open();

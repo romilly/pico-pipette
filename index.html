@@ -44,6 +44,7 @@
   #gutter .error { color: #fff; background: #b3261e; display: inline-block; padding: 0 0.25rem; margin-right: -0.25rem; }
 
   pre { background: #f4f4f4; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; margin: 0; }
+  #stdout { max-height: 16rem; overflow: auto; }
   #stderr { color: #b3261e; background: #fdf0ef; }
   #stderr:empty, #where:empty { display: none; }
   #where { margin: 0.5rem 0; color: #b3261e; }
@@ -68,7 +69,7 @@ click <b>Connect</b> and choose it from the list, then <b>Run</b> the program be
 Works in Chrome, Edge, and Firefox 151 or later.</p>
 
 <div class="bar">
-  <button id="connect">Connect</button>
+  <button id="connect" title="Shift-click to choose a different board">Connect</button>
   <button id="run" disabled>Run</button>
   <button id="stop" disabled>Stop</button>
   <span id="status">Not connected</span>
@@ -132,7 +133,7 @@ print("done")
 <div id="variables"><p class="none">Run your program to see its variables when it finishes or stops.</p></div>
 
 <script type="module">
-import { PicoLink } from './src/picolink.js';
+import { PicoLink, choosePort } from './src/picolink.js';
 import { errorLine, lineRange } from './src/traceback.js';
 import { inspectGlobals } from './src/inspector.js';
 import { listDir, readFile, writeFile, remove, makeDir, joinPath } from './src/picofs.js';
@@ -141,7 +142,6 @@ import { openLocalFile, saveLocalFile } from './src/localfiles.js';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor');
-const RASPBERRY_PI_VID = 0x2E8A;
 let link = null, badLine = null;
 let busy = false;          // false, 'running' (a program) or 'files' (a file operation)
 let picoDir = '/';         // folder shown in the Pico files panel
@@ -234,10 +234,11 @@ async function fileTask(message, action) {
 }
 
 // --- connecting
-$('connect').onclick = async () => {
+$('connect').onclick = async event => {
   if (!('serial' in navigator)) return refresh('This browser has no Web Serial: use Chrome, Edge or Firefox 151+');
   try {
-    const port = await navigator.serial.requestPort({ filters: [{ usbVendorId: RASPBERRY_PI_VID }] });
+    // Reuses an already-allowed Pico; Shift-click to choose a different board
+    const port = await choosePort(navigator.serial, { ask: event.shiftKey });
     link = new PicoLink(port);
     await link.open();
     refresh('Connected');
@@ -429,7 +430,11 @@ $('run').onclick = async () => {
   $('stdout').textContent = $('stderr').textContent = '';
   $('variables').innerHTML = '';
   markError('');
-  const show = ({ stdout, stderr }) => { $('stdout').textContent = stdout; $('stderr').textContent = stderr; };
+  const show = ({ stdout, stderr }) => {
+    $('stdout').textContent = stdout;
+    $('stdout').scrollTop = $('stdout').scrollHeight;   // follow the newest output
+    $('stderr').textContent = stderr;
+  };
   try {
     const result = await link.run(editor.value, { onOutput: show });
     show(result);

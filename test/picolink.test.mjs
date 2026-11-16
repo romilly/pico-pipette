@@ -1,7 +1,7 @@
 // Run with: node --test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PicoLink } from '../src/picolink.js';
+import { PicoLink, choosePort } from '../src/picolink.js';
 
 // A fake port that behaves like MicroPython's REPL. `script(code)` decides the result:
 // { stdout, stderr } to finish, or { stdout, forever: true } to keep running until Ctrl-C.
@@ -101,4 +101,43 @@ test('output streams while running, and interrupt stops the program', async () =
   assert.ok(seen.includes('blink 0\r\n'), 'output arrived before the program finished');
   assert.match(result.stderr, /KeyboardInterrupt/);
   await link.close();
+});
+
+// --- choosing a port: reuse a Pico the user has already allowed, otherwise ask
+
+function fakeSerial(allowed) {
+  const asked = [];
+  const picked = { picked: true };
+  return {
+    asked,
+    picked,
+    async getPorts() { return allowed; },
+    async requestPort(options) { asked.push(options); return picked; },
+  };
+}
+const port = (usbVendorId, name) => ({ name, getInfo: () => ({ usbVendorId }) });
+
+test('choosePort reuses the one Pico the user has already allowed, without asking', async () => {
+  const pico = port(0x2E8A, 'pico');
+  const serial = fakeSerial([pico]);
+  assert.equal(await choosePort(serial), pico);
+  assert.deepEqual(serial.asked, []);
+});
+
+test('choosePort asks, showing only Raspberry Pi boards, when no Pico is allowed yet', async () => {
+  const serial = fakeSerial([port(0x1234, 'some other device')]);
+  assert.equal(await choosePort(serial), serial.picked);
+  assert.deepEqual(serial.asked, [{ filters: [{ usbVendorId: 0x2E8A }] }]);
+});
+
+test('choosePort asks when more than one allowed Pico is plugged in', async () => {
+  const serial = fakeSerial([port(0x2E8A, 'a'), port(0x2E8A, 'b')]);
+  assert.equal(await choosePort(serial), serial.picked);
+  assert.equal(serial.asked.length, 1);
+});
+
+test('choosePort can be told to ask anyway, to switch to a different board', async () => {
+  const serial = fakeSerial([port(0x2E8A, 'pico')]);
+  assert.equal(await choosePort(serial, { ask: true }), serial.picked);
+  assert.equal(serial.asked.length, 1);
 });

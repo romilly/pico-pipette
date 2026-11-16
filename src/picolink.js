@@ -2,6 +2,18 @@
 // No DOM code here, so it can be tested in Node with a fake port.
 
 const RAW_BANNER = 'raw REPL; CTRL-B to exit\r\n>';
+export const RASPBERRY_PI_VID = 0x2E8A;
+
+// Pick a serial port: reuse the one Pico this site is already allowed to use, if exactly one is
+// plugged in; otherwise (or with ask: true) show the browser's chooser, listing only Raspberry Pi boards.
+// serial is navigator.serial.
+export async function choosePort(serial, { ask = false } = {}) {
+  if (!ask) {
+    const picos = (await serial.getPorts()).filter(p => p.getInfo().usbVendorId === RASPBERRY_PI_VID);
+    if (picos.length === 1) return picos[0];
+  }
+  return serial.requestPort({ filters: [{ usbVendorId: RASPBERRY_PI_VID }] });
+}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Raw REPL reply to a run is: OK <stdout> \x04 <stderr> \x04 >
