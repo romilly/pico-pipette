@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=./demo.schema.json
+#
+# The one-minute introduction to Pico Pipette. Run it with:
+#   node demo/demo.mjs demo/intro.yaml
+# It saves its program as main.py on the Pico and installs ssd1306 into /lib.
+
+title: Pico Pipette in a minute
+
+steps:
+  - caption: "Pico Pipette: MicroPython on a Raspberry Pi Pico, from your browser"
+  - pause: 3
+
+  - caption: Connect to the Pico. There's nothing to install
+  - pause: 1.5
+  - click: connect
+  - wait: connected
+  - pause: 1.5
+
+  - caption: Write a program…
+  - type: |
+      from machine import Pin
+      import time
+
+      led = Pin("LED", Pin.OUT)
+
+      for i in range(10):
+          led.toggle()
+          print("blink", i)
+          time.sleep(0.25)
+
+      print("done")
+  - pause: 1
+
+  - caption: …and run it on the Pico. Watch the LED
+  - run:
+  - pause: 2.5
+
+  - caption: Make a mistake…
+  - edit: { find: led, replace: leed, in: led.toggle }
+  - pause: 1
+  - caption: …and Pipette shows you where it went wrong
+  - run:
+  - pause: 4
+
+  - caption: Fix it
+  - edit: { find: leed, replace: led }
+  - pause: 1.5
+
+  - caption: Run a longer program, then stop it…
+  - edit: { find: range(10), replace: range(1000) }
+  - run: { wait: false }
+  - pause: 3.5
+  - stop:
+  - caption: …and see how far it got
+  - scroll: bottom
+  - pause: 4
+  - scroll: top
+  - pause: 1
+
+  - caption: Save it as main.py, and it runs whenever the Pico powers up
+  - save-main:
+  - pause: 3.5
+
+  - caption: Install packages from micropython-lib. The Pico doesn't need Wi-Fi
+  - install: ssd1306
+  - pause: 4
+
+  - caption: "Try it: romilly.github.io/pico-pipette"
+  - pause: 5
+  - caption: ""

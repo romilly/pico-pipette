@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://romilly.github.io/pico-pipette/demo/demo.schema.json",
+  "title": "Pico Pipette demo",
+  "description": "A scripted demonstration of Pico Pipette, run with: node demo/demo.mjs <file>.yaml",
+  "type": "object",
+  "required": ["steps"],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "description": "What the demo is called (shown in the terminal when it runs)." },
+    "url": {
+      "type": "string", "pattern": "^https?://",
+      "description": "The Pipette page to open. Defaults to the live site. A web address given on the command line overrides it."
+    },
+    "pace": {
+      "type": "number", "exclusiveMinimum": 0,
+      "description": "Scales every pause, pointer glide and typing delay: 1.5 is slower, 0.8 quicker. DEMO_PACE overrides it."
+    },
+    "viewport": {
+      "type": "object", "required": ["width", "height"], "additionalProperties": false,
+      "description": "Size of the page in pixels (default 1280 x 900).",
+      "properties": {
+        "width": { "type": "integer", "minimum": 400 },
+        "height": { "type": "integer", "minimum": 300 }
+      }
+    },
+    "steps": {
+      "type": "array", "minItems": 1,
+      "description": "What happens, in order. Each step has exactly one action.",
+      "items": { "$ref": "#/definitions/step" }
+    }
+  },
+  "definitions": {
+    "button": {
+      "type": "string",
+      "enum": ["connect", "run", "stop", "open", "save-local", "save-pico", "save-main",
+               "new-folder", "refresh", "install", "send", "clear-repl"]
+    },
+    "text": { "type": "string" },
+    "nothing": { "type": "null", "description": "Takes no value: write the action followed by a colon." },
+    "step": {
+      "type": "object", "minProperties": 1, "maxProperties": 1, "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "type": "string",
+          "description": "Show a caption at the bottom of the page. An empty string hides it."
+        },
+        "pause": { "type": "number", "minimum": 0, "description": "Wait this many seconds (scaled by pace)." },
+        "click": {
+          "description": "Move the pointer to a button and click it. Name a button, or give a CSS selector.",
+          "oneOf": [
+            { "$ref": "#/definitions/button" },
+            {
+              "type": "object", "required": ["selector"], "additionalProperties": false,
+              "properties": {
+                "selector": { "type": "string", "description": "A CSS selector for what to click." },
+                "x": { "type": "number", "minimum": 0, "maximum": 1, "description": "Across the element, 0 to 1 (default 0.5)." },
+                "y": { "type": "number", "minimum": 0, "maximum": 1, "description": "Down the element, 0 to 1 (default 0.5)." }
+              }
+            }
+          ]
+        },
+        "wait": {
+          "type": "string", "enum": ["connected", "finished", "idle"],
+          "description": "Wait until the Pico is connected, the program has finished or stopped, or nothing is in progress."
+        },
+        "type": { "type": "string", "description": "Replace the program in the editor, typing it in." },
+        "edit": {
+          "type": "object", "required": ["find", "replace"], "additionalProperties": false,
+          "description": "Point at some text in the editor, select it and type over it.",
+          "properties": {
+            "find": { "type": "string", "minLength": 1, "description": "The text to replace." },
+            "replace": { "type": "string", "description": "What to type instead." },
+            "in": { "type": "string", "description": "Which occurrence: the first `find` inside the first occurrence of this text." }
+          }
+        },
+        "run": {
+          "description": "Click Run. Waits until the program finishes, unless given { wait: false }.",
+          "oneOf": [
+            { "$ref": "#/definitions/nothing" },
+            {
+              "type": "object", "additionalProperties": false,
+              "properties": { "wait": { "type": "boolean", "description": "Wait for the program to finish (default true)." } }
+            }
+          ]
+        },
+        "stop": { "$ref": "#/definitions/nothing", "description": "Click Stop, and wait until the program has stopped." },
+        "repl": { "type": "string", "description": "Type into the REPL and press Enter. Several lines are entered as one block." },
+        "input": { "type": "string", "description": "Type a line to the running program's input() and press Enter." },
+        "install": { "type": "string", "description": "Install a package: a micropython-lib name, github:org/repo, or a URL." },
+        "save-main": { "$ref": "#/definitions/nothing", "description": "Click Save as main.py and wait until it's saved." },
+        "scroll": {
+          "type": "string", "enum": ["top", "bottom", "editor", "output", "repl", "variables"],
+          "description": "Scroll the page smoothly to the top, the bottom, or a part of the page."
+        }
+      }
+    }
+  }
+}

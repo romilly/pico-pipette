@@ -96,25 +96,20 @@ npm install
 npm test
 ```
 
-## Recording a demo
+## Scripted demos
 
-`demo/demo.mjs` drives a demonstration in your own Chrome, with captions, so you can record the window
-with a screen recorder such as SimpleScreenRecorder (and the Pico with a camera, to combine in a video editor).
-It needs a real Pico and Google Chrome:
+Demos are written as short YAML files, step by step: captions, clicks, typing, running, the REPL, and so on.
+`demo/demo.mjs` plays them in your own Chrome with a visible mouse pointer, ready to record
+with a screen recorder, or as an MP4. VS Code completes and checks demo files as you write them,
+using `demo/demo.schema.json`.
 
 ```
 npm install
-node demo/demo.mjs
+node demo/demo.mjs demo/intro.yaml
 ```
 
-The first time, pick your Pico when the port chooser appears; after that the demo runs with no clicks.
-It shows a mouse pointer that glides to each button and edit. To slow the whole demo down or speed it up,
-set `DEMO_PACE` (for example `DEMO_PACE=1.5 node demo/demo.mjs`).
-To have Playwright record the page itself, set `DEMO_VIDEO`: `DEMO_VIDEO=demo.mp4 node demo/demo.mjs`
-saves `demo/demo.mp4`.
-Playwright records WebM with its own copy of ffmpeg (`npx playwright-core install ffmpeg` gets it, once),
-and your own ffmpeg converts that to MP4. This records only the page, not the Pico.
-It saves its program as `main.py` on the Pico and installs `ssd1306`. See the comments in the script for more options.
+This is handy for tutorials and courses: a lesson's demo can be re-recorded in a minute whenever Pipette changes.
+See [demo/README.md](demo/README.md) for the steps you can use.
 
 ## Licence
 

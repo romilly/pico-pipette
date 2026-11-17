@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./demo.schema.json
+#
+# Shows a program asking a question with input(), then the REPL exploring what it left behind.
+#   node demo/demo.mjs demo/repl-and-input.yaml
+
+title: input() and the REPL
+
+steps:
+  - caption: Programs can ask questions with input()
+  - click: connect
+  - wait: connected
+
+  - type: |
+      name = input("What's your name? ")
+      letters = len(name)
+      print("Hello,", name)
+  - pause: 1
+  - run: { wait: false }
+  - caption: Type the answer under the output
+  - pause: 1
+  - input: Romilly
+  - wait: finished
+  - pause: 2
+
+  - caption: The REPL can use what the program left behind
+  - scroll: repl
+  - repl: letters * 10
+  - pause: 1.5
+  - repl: name.upper()
+  - pause: 1.5
+
+  - caption: Blocks work too
+  - repl: |
+      for i in range(3):
+          print(i, name)
+  - pause: 2
+
+  - caption: …and the variables update as you go
+  - repl: letters += 1
+  - scroll: variables
+  - pause: 4
+  - caption: ""
