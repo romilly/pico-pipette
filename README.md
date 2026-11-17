@@ -10,6 +10,7 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 
 - **Write code** in an editor with Python syntax colouring and line numbers.
 - **Run code on the Pico** and see its output as it arrives. **Stop** a program that's still running.
+  Programs can use `input()`: type to them in the box that appears while they run.
 - **Find errors fast.** When a program fails, the line that caused it is highlighted in the editor,
   with the error message beside it.
 - **See the variables** your program left behind when it finished, crashed or was stopped.
@@ -22,7 +23,7 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 - **Check your connection** with the connection checker, which explains the common problems
   (another tab or program holding the Pico, power-only USB cables, boards without MicroPython, Linux permissions).
 
-Not there yet: programs that use `input()`, and stepping through code line by line.
+Not there yet: stepping through code line by line.
 
 ## Using it
 
@@ -81,6 +82,7 @@ or with MicroPython running in WebAssembly:
 ```
 run(code, { onOutput, reset = true })  ->  { stdout, stderr }
 interrupt()
+sendInput(line)    (optional: typing for a running program's input())
 ```
 
 Most tests run against real MicroPython (the WebAssembly build), not a mock.

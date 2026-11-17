@@ -7,7 +7,7 @@ import { PicoLink, choosePort } from '../src/picolink.js';
 // { stdout, stderr } to finish, or { stdout, forever: true } to keep running until Ctrl-C.
 function fakePico(script) {
   const enc = new TextEncoder(), dec = new TextDecoder();
-  let controller, mode = 'friendly';
+  let controller, mode = 'friendly', typed = '';
   const send = text => controller.enqueue(enc.encode(text));
   const events = [];
   return {
@@ -18,6 +18,16 @@ function fakePico(script) {
     writable: new WritableStream({
       write(chunk) {
         const text = dec.decode(chunk);
+        if (mode === 'input') {                      // the program is in input(): echo, like MicroPython
+          events.push(['stdin', text]);
+          send(text.replace(/\r/g, '\r\n'));
+          typed += text;
+          if (typed.endsWith('\r')) {
+            send(`Hello, ${typed.slice(0, -1)}\r\n\x04\x04>`);
+            mode = 'raw';
+          }
+          return;
+        }
         if (text.includes('\x03')) {
           if (mode === 'running') {
             send('\x04Traceback (most recent call last):\r\nKeyboardInterrupt: \r\n\x04>');
@@ -37,6 +47,7 @@ function fakePico(script) {
           const result = script(text.slice(0, -1));
           send('OK' + (result.stdout ?? ''));
           if (result.forever) mode = 'running';
+          else if (result.input) { mode = 'input'; typed = ''; }
           else send('\x04' + (result.stderr ?? '') + '\x04>');
         }
       },
@@ -140,4 +151,37 @@ test('choosePort can be told to ask anyway, to switch to a different board', asy
   const serial = fakeSerial([port(0x2E8A, 'pico')]);
   assert.equal(await choosePort(serial, { ask: true }), serial.picked);
   assert.equal(serial.asked.length, 1);
+});
+
+// --- typing to a running program, for input()
+
+test('sendInput passes a line to a program waiting in input(), which echoes it', async () => {
+  const link = await connect(() => ({ stdout: 'Name? ', input: true }));
+  const running = link.run('print("Hello,", input("Name? "))');
+  await link.waitFor(b => b.includes('Name? '));
+  await link.sendInput('Romilly');
+  const { stdout, stderr } = await running;
+  assert.equal(stdout, 'Name? Romilly\r\nHello, Romilly\r\n');
+  assert.equal(stderr, '');
+  assert.deepEqual(link.port.events.filter(e => e[0] === 'stdin'), [['stdin', 'Romilly\r']]);
+  await link.close();
+});
+
+test('sendInput leaves out control characters, so typing can\'t interrupt or end the program', async () => {
+  const link = await connect(() => ({ stdout: '? ', input: true }));
+  const running = link.run('input("? ")');
+  await link.waitFor(b => b.includes('? '));
+  await link.sendInput('a\x03b\x04c\td\n');
+  await running;
+  assert.deepEqual(link.port.events.filter(e => e[0] === 'stdin'), [['stdin', 'abc d\r']]);
+  await link.close();
+});
+
+test('typing sent before the program has started waits for it, rather than going astray', async () => {
+  const link = await connect(() => ({ stdout: 'Name? ', input: true }));
+  const running = link.run('print("Hello,", input("Name? "))');
+  await link.sendInput('early');                 // straight away, while run() is still starting up
+  const { stdout } = await running;
+  assert.equal(stdout, 'Name? early\r\nHello, early\r\n');
+  await link.close();
 });

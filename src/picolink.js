@@ -31,6 +31,7 @@ export class PicoLink {
     this.decoder = new TextDecoder();
     this.encoder = new TextEncoder();
     this.onData = () => {};   // optional: called with everything received, e.g. for a log
+    this.codeSent = Promise.resolve();   // settles once the running program's code has reached the Pico
   }
 
   async open() {
@@ -67,6 +68,16 @@ export class PicoLink {
   // Run code to completion (or until interrupt()); onOutput gets {stdout, stderr} as it arrives.
   // By default the Pico is soft-reset first, so nothing is left over from earlier runs.
   async run(code, { onOutput = () => {}, reset = true } = {}) {
+    let sent;
+    this.codeSent = new Promise(resolve => { sent = resolve; });
+    try {
+      return await this.execute(code, onOutput, reset, () => sent());
+    } finally {
+      sent();
+    }
+  }
+
+  async execute(code, onOutput, reset, sent) {
     await this.write('\r\x03\x03');               // stop anything already running
     await sleep(200);
     this.buffer = '';
@@ -82,6 +93,7 @@ export class PicoLink {
     }
     this.buffer = '';
     await this.write(code + '\x04');              // send code, Ctrl-D runs it
+    sent();
     let seen = '';
     const reply = await this.waitFor(b => {
       if (b !== seen) { seen = b; onOutput(parseReply(b)); }
@@ -93,6 +105,14 @@ export class PicoLink {
   }
 
   async interrupt() { await this.write('\x03'); }  // raises KeyboardInterrupt on the Pico
+
+  // Send a line of typing to the running program, for input() to read; MicroPython echoes it back.
+  // Like ViperIDE, this doesn't check that the program is waiting: unread typing waits on the Pico.
+  // Control characters are left out (tabs become spaces), so typing can't stop or end the program.
+  async sendInput(line) {
+    await this.codeSent;   // typing before the program starts would reach MicroPython's normal REPL instead
+    await this.write(line.replace(/\t/g, ' ').replace(/[\x00-\x1f\x7f]/g, '') + '\r');
+  }
 
   async close() {
     await this.reader.cancel().catch(() => {});

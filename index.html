@@ -58,6 +58,11 @@
   pre { background: #f4f4f4; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; margin: 0; }
   #stdout { max-height: 16rem; overflow: auto; }
   #stderr { color: #b3261e; background: #fdf0ef; }
+  /* Typing to a running program, for input() */
+  #stdin-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.35rem 0; }
+  #stdin-row[hidden] { display: none; }
+  #stdin-row label { color: #555; font-size: 0.9rem; }
+  #stdin { flex: 1; font: 0.95rem ui-monospace, monospace; padding: 0.2rem 0.4rem; }
   /* The REPL: a transcript, then a prompt to type at */
   .repl-head { display: flex; align-items: baseline; gap: 1rem; }
   .repl-head small { color: #666; }
@@ -154,6 +159,11 @@ print("done")
 
 <h2>Output</h2>
 <pre id="stdout"></pre>
+<div id="stdin-row" hidden>
+  <label for="stdin">Type to your program:</label>
+  <input id="stdin" spellcheck="false" autocomplete="off" placeholder="for input(): type and press Enter">
+  <button id="send-input" type="button">Send</button>
+</div>
 <p id="where"></p>
 <pre id="stderr"></pre>
 
@@ -248,6 +258,7 @@ function refresh(status) {
   for (const id of ['run', 'save-pico', 'save-main', 'new-folder', 'reload', 'install', 'repl-input']) $(id).disabled = !ready;
   $('repl-input').placeholder = link ? '' : 'Connect to use the REPL';
   $('stop').disabled = busy !== 'running';
+  $('stdin-row').hidden = busy !== 'running';
   $('files').classList.toggle('busy', !!busy);
 }
 
@@ -497,6 +508,8 @@ $('run').onclick = async () => {
   $('stdout').textContent = $('stderr').textContent = '';
   $('variables').innerHTML = '';
   markError('');
+  $('stdout').after($('stdin-row'));             // typing for input() goes under the program's output
+  setTimeout(() => $('stdin').focus());        // ready for the program's input()
   const show = ({ stdout, stderr }) => {
     $('stdout').textContent = stdout;
     $('stdout').scrollTop = $('stdout').scrollHeight;   // follow the newest output
@@ -521,6 +534,16 @@ $('run').onclick = async () => {
 };
 
 $('stop').onclick = () => link.interrupt();
+
+// --- typing to a running program: sent a line at a time, for input() to read (MicroPython echoes it)
+async function sendInput() {
+  const text = $('stdin').value;
+  $('stdin').value = '';
+  await link.sendInput(text);
+  $('stdin').focus();
+}
+$('stdin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendInput(); } });
+$('send-input').onclick = sendInput;
 
 // --- the REPL: shares variables with the program that last ran
 const replInput = $('repl-input');
@@ -553,8 +576,10 @@ async function runRepl() {
   const lines = typed.split('\n');
   logRepl(lines.map((line, i) => `<span class="prompt">${i ? '... ' : '>>> '}</span>${highlight(line)}`).join('\n') + '\n');
   if (!source.trim()) return;
+  replLog.after($('stdin-row'));                // typing for input() goes under the REPL's output
   busy = 'running';
   refresh('Running…');
+  $('stdin').focus();
   const output = document.createElement('span');
   replLog.append(output);
   try {
