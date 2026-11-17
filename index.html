@@ -58,6 +58,18 @@
   pre { background: #f4f4f4; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; margin: 0; }
   #stdout { max-height: 16rem; overflow: auto; }
   #stderr { color: #b3261e; background: #fdf0ef; }
+  /* The REPL: a transcript, then a prompt to type at */
+  .repl-head { display: flex; align-items: baseline; gap: 1rem; }
+  .repl-head small { color: #666; }
+  #repl { border: 1px solid #ccc; font: 0.95rem/1.4 ui-monospace, monospace; }
+  #repl-log { max-height: 16rem; overflow: auto; background: #fff; min-height: 0; padding: 0.5rem 0.75rem 0; }
+  #repl-log:empty { display: none; }
+  #repl-log .err { color: #b3261e; }
+  #repl-log .prompt, #repl .prompt { color: #999; user-select: none; }
+  .repl-input { display: flex; align-items: flex-start; padding: 0.25rem 0.75rem 0.5rem; background: #fff; }
+  .repl-input .prompt { white-space: pre; }
+  #repl-input { flex: 1; font: inherit; border: 0; outline: none; resize: none; padding: 0; tab-size: 4; white-space: pre; overflow: hidden; background: none; }
+  #repl-input:disabled { background: none; }
   #stderr:empty, #where:empty { display: none; }
   #where { margin: 0.5rem 0; color: #b3261e; }
   #where a { color: inherit; font-weight: bold; }
@@ -145,6 +157,16 @@ print("done")
 <p id="where"></p>
 <pre id="stderr"></pre>
 
+<div class="repl-head">
+  <h2>REPL</h2>
+  <small>Type Python and press Enter. ↑ and ↓ recall earlier lines.</small>
+  <button id="repl-clear" type="button">Clear</button>
+</div>
+<div id="repl">
+  <pre id="repl-log"></pre>
+  <div class="repl-input"><span class="prompt" id="repl-prompt">&gt;&gt;&gt; </span><textarea id="repl-input" rows="1" spellcheck="false" wrap="off" disabled placeholder="Connect to use the REPL"></textarea></div>
+</div>
+
 <h2>Variables</h2>
 <div id="variables"><p class="none">Run your program to see its variables when it finishes or stops.</p></div>
 
@@ -153,6 +175,7 @@ import { PicoLink, choosePort } from './src/picolink.js';
 import { errorLine, lineRange } from './src/traceback.js';
 import { highlight } from './src/highlight.js';
 import { inspectGlobals } from './src/inspector.js';
+import { evaluate, needsMore, History } from './src/repl.js';
 import { listDir, readFile, writeFile, remove, makeDir, joinPath } from './src/picofs.js';
 import { installPackage } from './src/packages.js';
 import { openLocalFile, saveLocalFile } from './src/localfiles.js';
@@ -222,7 +245,8 @@ function refresh(status) {
   if (status) $('status').textContent = status;
   const ready = !!link && !busy;
   $('connect').disabled = !!link;
-  for (const id of ['run', 'save-pico', 'save-main', 'new-folder', 'reload', 'install']) $(id).disabled = !ready;
+  for (const id of ['run', 'save-pico', 'save-main', 'new-folder', 'reload', 'install', 'repl-input']) $(id).disabled = !ready;
+  $('repl-input').placeholder = link ? '' : 'Connect to use the REPL';
   $('stop').disabled = busy !== 'running';
   $('files').classList.toggle('busy', !!busy);
 }
@@ -458,6 +482,15 @@ function showVariables(rows) {
   box.append(table);
 }
 
+async function updateVariables() {
+  try {
+    showVariables(await inspectGlobals(link));
+  } catch (e) {
+    $('variables').innerHTML = '<p class="none"></p>';
+    $('variables').firstChild.textContent = `Could not read the variables: ${e.message}`;
+  }
+}
+
 $('run').onclick = async () => {
   busy = 'running';
   refresh('Running…');
@@ -475,12 +508,7 @@ $('run').onclick = async () => {
     markError(result.stderr);
     busy = 'files';
     refresh('Reading variables…');
-    try {
-      showVariables(await inspectGlobals(link));
-    } catch (e) {
-      $('variables').innerHTML = '<p class="none"></p>';
-      $('variables').firstChild.textContent = `Could not read the variables: ${e.message}`;
-    }
+    await updateVariables();
     refresh(/KeyboardInterrupt/.test(result.stderr) ? 'Stopped'
       : result.stderr ? 'Finished with an error' : 'Finished');
   } catch (e) {
@@ -493,6 +521,93 @@ $('run').onclick = async () => {
 };
 
 $('stop').onclick = () => link.interrupt();
+
+// --- the REPL: shares variables with the program that last ran
+const replInput = $('repl-input');
+const replLog = $('repl-log');
+const history = new History();
+
+function logRepl(html, className) {
+  const span = document.createElement('span');
+  if (className) span.className = className;
+  span.innerHTML = html;
+  replLog.append(span);
+  replLog.scrollTop = replLog.scrollHeight;
+}
+const escapeHtml = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function setReplInput(text) {
+  replInput.value = text;
+  fitReplInput();
+}
+function fitReplInput() {
+  replInput.rows = Math.max(1, replInput.value.split('\n').length);
+  $('repl-prompt').textContent = ['>>> ', ...replInput.value.split('\n').slice(1).map(() => '... ')].join('\n');
+}
+
+async function runRepl() {
+  const source = replInput.value;
+  const typed = source.replace(/\s+$/, '');      // without the blank line that ended a block
+  history.add(typed);
+  setReplInput('');
+  const lines = typed.split('\n');
+  logRepl(lines.map((line, i) => `<span class="prompt">${i ? '... ' : '>>> '}</span>${highlight(line)}`).join('\n') + '\n');
+  if (!source.trim()) return;
+  busy = 'running';
+  refresh('Running…');
+  const output = document.createElement('span');
+  replLog.append(output);
+  try {
+    const { stdout, stderr } = await evaluate(link, source, {
+      onOutput: ({ stdout }) => { output.textContent = stdout; replLog.scrollTop = replLog.scrollHeight; },
+    });
+    output.textContent = stdout;
+    if (stderr) logRepl(escapeHtml(stderr.replace(/\r/g, '')), 'err');
+    busy = 'files';
+    refresh('Reading variables…');
+    await updateVariables();
+    refresh(/KeyboardInterrupt/.test(stderr) ? 'Stopped' : 'Ready');
+  } catch (e) {
+    logRepl(escapeHtml(e.message + '\n'), 'err');
+    refresh('Something went wrong talking to the Pico');
+  } finally {
+    busy = false;
+    refresh();
+    replInput.focus();
+  }
+}
+
+replInput.addEventListener('keydown', e => {
+  const { value, selectionStart, selectionEnd } = replInput;
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const atEnd = selectionStart === value.length;
+    if (atEnd && needsMore(value)) {
+      // Carry on the block: keep the indentation, and indent further after a colon
+      const line = value.slice(value.lastIndexOf('\n') + 1);
+      const indent = line.match(/^[ \t]*/)[0] + (line.trimEnd().endsWith(':') ? '    ' : '');
+      replInput.setRangeText('\n' + indent, selectionStart, selectionEnd, 'end');
+      fitReplInput();
+    } else {
+      runRepl();
+    }
+  } else if (e.key === 'Enter') {                 // Shift-Enter: a new line without running
+    e.preventDefault();
+    replInput.setRangeText('\n', selectionStart, selectionEnd, 'end');
+    fitReplInput();
+  } else if (e.key === 'Tab') {
+    e.preventDefault();
+    replInput.setRangeText('    ', selectionStart, selectionEnd, 'end');
+  } else if (e.key === 'ArrowUp' && !value.slice(0, selectionStart).includes('\n')) {
+    e.preventDefault();
+    setReplInput(history.back(value));
+  } else if (e.key === 'ArrowDown' && !value.slice(selectionEnd).includes('\n')) {
+    e.preventDefault();
+    setReplInput(history.forward());
+  }
+});
+replInput.addEventListener('input', fitReplInput);
+$('repl-clear').onclick = () => { replLog.textContent = ''; replInput.focus(); };
 
 // Tab inserts four spaces rather than leaving the editor
 editor.addEventListener('keydown', e => {

@@ -13,6 +13,7 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 - **Find errors fast.** When a program fails, the line that caused it is highlighted in the editor,
   with the error message beside it.
 - **See the variables** your program left behind when it finished, crashed or was stopped.
+- **Try things in the REPL**, which shares variables with the program you last ran: look at them, change them, call your functions.
 - **Open and save files** on your computer.
 - **Browse the Pico's files**: open them in the editor, save to the Pico, delete, and create folders.
   **Save as main.py** makes your program run whenever the Pico powers up.
@@ -21,7 +22,7 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 - **Check your connection** with the connection checker, which explains the common problems
   (another tab or program holding the Pico, power-only USB cables, boards without MicroPython, Linux permissions).
 
-Not there yet: an interactive REPL, programs that use `input()`, and stepping through code line by line.
+Not there yet: programs that use `input()`, and stepping through code line by line.
 
 ## Using it
 
@@ -67,6 +68,7 @@ src/
   traceback.js    finds the failing line in a MicroPython traceback
   highlight.js    colours Python code for the editor
   inspector.js    lists the global variables a program left behind
+  repl.js         the interactive REPL: runs what's typed, decides when a block is complete, keeps history
   picofs.js       files on the Pico: list, read, write, delete, create folders
   packages.js     installs packages the way mip does
   localfiles.js   opens and saves files on your computer

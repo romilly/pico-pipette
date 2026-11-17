@@ -26,6 +26,7 @@
     <li><a href="#connect">Connecting</a></li>
     <li><a href="#run">Running and stopping</a></li>
     <li><a href="#errors">When something goes wrong</a></li>
+    <li><a href="#repl">The REPL</a></li>
     <li><a href="#variables">Variables</a></li>
     <li><a href="#files">Files</a></li>
     <li><a href="#packages">Packages</a></li>
@@ -82,6 +83,19 @@ Run always uses what's in the editor, not a file saved on the Pico.</p>
 <p>If the error happens inside one of your functions, the line inside the function is the one marked.
 Errors inside libraries are traced back to the line of your program that called them.
 When you press <b>Stop</b>, the line the program had reached is marked in the same way.</p>
+
+<h2 id="repl">The REPL</h2>
+<p>The <b>REPL</b> box under the output lets you type Python and run it on the Pico straight away, a line at a time.
+Type an expression, such as <code>2 ** 10</code>, and press <kbd>Enter</kbd> to see its value.</p>
+<ul>
+  <li>The REPL shares variables with the program you last ran, so after <b>Run</b> or <b>Stop</b> you can look at them,
+    change them, or call your functions. The Variables table updates after each line.</li>
+  <li>After a line ending in <code>:</code>, or with a bracket still open, <kbd>Enter</kbd> starts a new line
+    (indented for you). Press <kbd>Enter</kbd> on an empty line to run the whole block.
+    <kbd>Shift</kbd>+<kbd>Enter</kbd> always starts a new line.</li>
+  <li><kbd>↑</kbd> and <kbd>↓</kbd> bring back earlier lines. <b>Stop</b> interrupts a line that's still running.</li>
+  <li>Running a program starts afresh, clearing the REPL's variables too.</li>
+</ul>
 
 <h2 id="variables">Variables</h2>
 <p>When your program finishes, fails or is stopped, the <b>Variables</b> table shows the variables it left behind,
