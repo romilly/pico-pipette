@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Pico Pipette: help</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 1.5rem auto 4rem; padding: 0 1rem; line-height: 1.6; color: #222; }
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 1.5rem auto 4rem; padding: 0 1rem; line-height: 1.6; color: #222; position: relative; }
   h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
   h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.2rem; }
   h3 { font-size: 1rem; margin: 1.2rem 0 0.2rem; }
@@ -13,9 +13,13 @@
   nav { background: #f7f7f7; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.95rem; }
   nav ol { margin: 0.25rem 0; padding-left: 1.2rem; columns: 2; }
   .back { color: #555; }
+  .repo-link { position: absolute; top: 0.6rem; right: 1rem; line-height: 0; opacity: 0.45; transition: opacity 0.15s; }
+  .repo-link:hover, .repo-link:focus-visible { opacity: 1; }
 </style>
 </head>
 <body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="resources/github-mark.svg" alt="" width="22" height="22"></a>
 <h1>Pico Pipette help</h1>
 <p class="back"><a href="index.html">Back to the editor</a> · <a href="check.html">Check your connection</a></p>
 

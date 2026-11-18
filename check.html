@@ -4,13 +4,17 @@
 <meta charset="utf-8">
 <title>Pico Pipette: check your connection</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; position: relative; }
   .pass { color: #0a7d32; } .fail { color: #b3261e; } .pending { color: #666; }
   .hint { color: #444; font-size: 0.9rem; margin: 0.25rem 0 0.75rem; }
   pre { background: #f4f4f4; padding: 1rem; white-space: pre-wrap; max-height: 20rem; overflow: auto; }
+  .repo-link { position: absolute; top: 0.8rem; right: 1rem; line-height: 0; opacity: 0.45; transition: opacity 0.15s; }
+  .repo-link:hover, .repo-link:focus-visible { opacity: 1; }
 </style>
 </head>
 <body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="resources/github-mark.svg" alt="" width="22" height="22"></a>
 <h1>Check your Pico connection</h1>
 <p>Plug in a Pico running MicroPython, close Thonny or anything else using it, then click <b>Check</b>.
 When all three checks pass, go to the <a href="index.html">Pico Pipette editor</a>.

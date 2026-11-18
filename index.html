@@ -8,11 +8,9 @@
   .top { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
   .top h1 { margin: 0; font-size: 1.6rem; }
   .top span, .intro { color: #555; }
-  .top { position: relative; padding-right: 5.5rem; }
-  .repo-link { position: absolute; top: 0.35rem; right: 0; display: inline-flex; align-items: center; gap: 0.3rem;
-    color: #888; font-size: 0.85rem; text-decoration: none; }
-  .repo-link:hover, .repo-link:focus-visible { color: #222; }
-  .repo-link svg { width: 18px; height: 18px; }
+  .top { position: relative; padding-right: 2.5rem; }
+  .repo-link { position: absolute; top: 0.3rem; right: 0; line-height: 0; opacity: 0.45; transition: opacity 0.15s; }
+  .repo-link:hover, .repo-link:focus-visible { opacity: 1; }
   .intro { margin: 0.5rem 0; }
   .bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.75rem 0; }
   #status { color: #666; }
@@ -96,10 +94,8 @@
   <span>Program your Raspberry Pi Pico from the browser ·
     <a href="help.html">help</a> ·
     <a href="check.html">check your connection</a></span>
-  <a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/>
-    </svg>GitHub</a>
+  <a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+    <img src="resources/github-mark.svg" alt="" width="22" height="22"></a>
 </header>
 <p class="intro">Plug in a Pico running <a href="https://micropython.org/download/RPI_PICO/" target="_blank" rel="noopener">MicroPython</a>,
 click <b>Connect</b> and choose it from the list, then <b>Run</b> the program below.
