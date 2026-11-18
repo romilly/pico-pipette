@@ -23,8 +23,6 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 - **Check your connection** with the connection checker, which explains the common problems
   (another tab or program holding the Pico, power-only USB cables, boards without MicroPython, Linux permissions).
 
-Not there yet: stepping through code line by line.
-
 ## Using it
 
 - **Editor:** https://romilly.github.io/pico-pipette/
