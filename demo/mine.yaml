@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=./demo.schema.json
+steps:
+  - caption: Connect to the Pico
+  - click: connect
+  - wait: connected
+  - type: |
+      from machine import Pin
+      Pin("LED", Pin.OUT).on()
+  - run:
