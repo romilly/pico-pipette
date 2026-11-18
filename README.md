@@ -41,18 +41,28 @@ browsers only allow Web Serial and module scripts on `https://` or `localhost` p
 ## Using Pipette in your own pages
 
 The modules in `src/` have no dependencies and no build step, so a course or tutorial page can import them directly.
-`examples/blink-lesson.html` is a complete lesson page with its own code box.
+`examples/blink-lesson.html` is a complete lesson page with its own code editor.
 Pages hosted elsewhere should be able to import the published copies,
 such as `https://romilly.github.io/pico-pipette/src/picolink.js`.
 
 ```js
 import { PicoLink } from './src/picolink.js';
-import { errorLine } from './src/traceback.js';
+import { createEditor } from './src/editor.js';
+
+// Pipette's editor: line numbers, colours, and the failing line marked after an error.
+// It adds its own styles; make as many as you like on one page.
+const editor = createEditor({ value: 'print("Hello from the Pico")', rows: 8 });
+document.body.append(editor.element, editor.where);   // where shows "Line n: ..." after an error
 
 const link = new PicoLink(await navigator.serial.requestPort());
 await link.open();
-const { stdout, stderr } = await link.run('print("Hello from the Pico")');
+const { stdout, stderr } = await link.run(editor.value);
+editor.markError(stderr);   // returns the failing line's number, or null
 ```
+
+The editor also has `textarea` (its `input` event fires on every edit, Tab included), `clearError()`,
+`selectLine(n)`, and `refresh()` for after changing `textarea.value` directly.
+Its classes start `pipette-`, and syntax colours use `tok-` classes; a page's own CSS can restyle either.
 
 ## How it's built
 
@@ -64,6 +74,7 @@ examples/       how other pages can use Pipette
 src/
   picolink.js     runs code on a Pico over Web Serial, using MicroPython's raw REPL
   micropython.js  runs code in MicroPython compiled to WebAssembly (for tests, and a future "no Pico" mode)
+  editor.js       the code editor component (line numbers, colours, error line), used by the pages
   traceback.js    finds the failing line in a MicroPython traceback
   highlight.js    colours Python code for the editor
   inspector.js    lists the global variables a program left behind
@@ -84,6 +95,8 @@ sendInput(line)    (optional: typing for a running program's input())
 ```
 
 Most tests run against real MicroPython (the WebAssembly build), not a mock.
+The editor's tests run in Chrome (via playwright-core); they're skipped if Chrome can't be found
+(set `CHROME` to its path).
 
 ## Developing
 

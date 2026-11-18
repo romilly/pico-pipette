@@ -39,24 +39,6 @@
   #install-log { font-size: 0.75rem; padding: 0.4rem; margin-top: 0.35rem; min-height: 0; max-height: 8rem; overflow: auto; }
   #install-log.failed { color: #b3261e; background: #fdf0ef; }
 
-  .code { display: flex; align-items: flex-start; border: 1px solid #ccc; }
-  .code textarea, .code #gutter, .code #colour { font: 0.95rem/1.4 ui-monospace, monospace; padding: 0.5rem; margin: 0; border: 0; tab-size: 4; }
-  /* The editor is a transparent textarea over a coloured copy of the same text */
-  .editor-wrap { position: relative; flex: 1; display: flex; background: #fff; }
-  .code textarea { flex: 1; position: relative; z-index: 1; resize: vertical; white-space: pre; overflow: auto; outline: none;
-    background: transparent; color: transparent; caret-color: #111; }
-  .code textarea::selection { background: rgba(255, 120, 100, 0.3); }
-  #colour { position: absolute; inset: 0; white-space: pre; overflow: hidden; pointer-events: none; color: #222; background: none; }
-  #error-band { position: absolute; left: 0; right: 0; background: #fde2df; display: none; pointer-events: none; }
-  .tok-keyword, .tok-constant { color: #8a2be2; }
-  .tok-builtin { color: #0b6e99; }
-  .tok-name { color: #1a4fd6; }
-  .tok-string { color: #2e7d32; }
-  .tok-number { color: #b35900; }
-  .tok-comment { color: #8a8a8a; }
-  .tok-decorator { color: #a0522d; }
-  #gutter { box-sizing: border-box; background: #f4f4f4; color: #999; text-align: right; min-width: 2ch; overflow: hidden; user-select: none; }
-  #gutter .error { color: #fff; background: #b3261e; display: inline-block; padding: 0 0.25rem; margin-right: -0.25rem; }
 
   pre { background: #f4f4f4; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; margin: 0; }
   #stdout { max-height: 16rem; overflow: auto; }
@@ -78,9 +60,7 @@
   .repl-input .prompt { white-space: pre; }
   #repl-input { flex: 1; font: inherit; border: 0; outline: none; resize: none; padding: 0; tab-size: 4; white-space: pre; overflow: hidden; background: none; }
   #repl-input:disabled { background: none; }
-  #stderr:empty, #where:empty { display: none; }
-  #where { margin: 0.5rem 0; color: #b3261e; }
-  #where a { color: inherit; font-weight: bold; }
+  #stderr:empty { display: none; }
   #variables table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
   #variables th, #variables td { text-align: left; padding: 0.25rem 0.75rem; border-bottom: 1px solid #e5e5e5; }
   #variables td { font-family: ui-monospace, monospace; }
@@ -140,25 +120,7 @@ Works in Chrome, Edge, and Firefox 151 or later.</p>
     </form>
   </section>
 
-  <div class="code">
-  <pre id="gutter" aria-hidden="true"></pre>
-  <div class="editor-wrap">
-  <div id="error-band"></div>
-  <pre id="colour" aria-hidden="true"></pre>
-  <textarea id="editor" rows="14" spellcheck="false" wrap="off">from machine import Pin
-import time
-
-led = Pin("LED", Pin.OUT)
-
-for i in range(10):
-    led.toggle()
-    print("blink", i)
-    time.sleep(0.5)
-
-print("done")
-</textarea>
-  </div>
-  </div>
+  <div id="code"></div>
 </div>
 
 <h2>Output</h2>
@@ -168,7 +130,7 @@ print("done")
   <input id="stdin" spellcheck="false" autocomplete="off" placeholder="for input(): type and press Enter">
   <button id="send-input" type="button">Send</button>
 </div>
-<p id="where"></p>
+<p id="where-goes-here"></p>
 <pre id="stderr"></pre>
 
 <div class="repl-head">
@@ -186,7 +148,7 @@ print("done")
 
 <script type="module">
 import { PicoLink, choosePort } from './src/picolink.js';
-import { errorLine, lineRange } from './src/traceback.js';
+import { createEditor } from './src/editor.js';
 import { highlight } from './src/highlight.js';
 import { inspectGlobals } from './src/inspector.js';
 import { evaluate, needsMore, History } from './src/repl.js';
@@ -195,64 +157,30 @@ import { installPackage } from './src/packages.js';
 import { openLocalFile, saveLocalFile } from './src/localfiles.js';
 
 const $ = id => document.getElementById(id);
-const editor = $('editor');
-let link = null, badLine = null;
+const STARTER = `from machine import Pin
+import time
+
+led = Pin("LED", Pin.OUT)
+
+for i in range(10):
+    led.toggle()
+    print("blink", i)
+    time.sleep(0.5)
+
+print("done")
+`;
+// The editor component: its textarea has id "editor" (demo scripts use it); "Line n: ..." goes above the errors
+const code = createEditor({ value: STARTER, rows: 14, id: 'editor' });
+$('code').append(code.element);
+$('where-goes-here').replaceWith(code.where);
+const editor = code.textarea;
+let link = null;
 let busy = false;          // false, 'running' (a program) or 'files' (a file operation)
 let picoDir = '/';         // folder shown in the Pico files panel
 let localHandle = null;    // where "Save to computer" writes, once known (Chrome and Edge)
 let unsaved = false;
 
-// --- the editor: line numbers, colours, and a band behind the error line
-function drawGutter() {
-  const count = editor.value.split('\n').length;
-  $('gutter').innerHTML = Array.from({ length: count }, (_, i) =>
-    i + 1 === badLine ? `<span class="error">${i + 1}</span>` : `${i + 1}`).join('\n');
-  $('colour').innerHTML = highlight(editor.value) + '\n';
-  syncScroll();
-}
-
-// Keep the line numbers, colours and error band lined up with the text as it scrolls
-function syncScroll() {
-  $('gutter').scrollTop = $('colour').scrollTop = editor.scrollTop;
-  $('colour').scrollLeft = editor.scrollLeft;
-  const band = $('error-band');
-  band.style.display = badLine ? 'block' : 'none';
-  if (badLine) {
-    const style = getComputedStyle(editor);
-    const lineHeight = parseFloat(style.lineHeight);
-    band.style.height = `${lineHeight}px`;
-    band.style.top = `${parseFloat(style.paddingTop) + (badLine - 1) * lineHeight - editor.scrollTop}px`;
-  }
-}
-
-function selectLine(n) {
-  const range = lineRange(editor.value, n);
-  if (!range) return;
-  editor.focus();
-  editor.setSelectionRange(...range);
-}
-
-function markError(stderr) {
-  badLine = errorLine(stderr);
-  const message = stderr.trim().split('\n').at(-1).trim();
-  $('where').innerHTML = '';
-  if (badLine) {
-    $('where').innerHTML = `<a href="#">Line ${badLine}</a>: `;
-    $('where').append(message);
-    $('where').querySelector('a').onclick = e => { e.preventDefault(); selectLine(badLine); };
-    selectLine(badLine);
-  }
-  drawGutter();
-}
-
-editor.addEventListener('input', () => {
-  badLine = null; $('where').innerHTML = ''; drawGutter();
-  setUnsaved(true);
-});
-editor.addEventListener('scroll', syncScroll);
-// The line numbers are exactly as tall as the editor, which scrolls (and can be resized)
-new ResizeObserver(() => { $('gutter').style.height = `${editor.offsetHeight}px`; }).observe(editor);
-drawGutter();
+editor.addEventListener('input', () => setUnsaved(true));   // typing, pasting or Tab
 
 // --- buttons follow the connection and whatever is in progress
 function refresh(status) {
@@ -283,9 +211,7 @@ function fileName() {
 
 function loadIntoEditor(name, text) {
   $('filename').value = name;
-  editor.value = text;
-  badLine = null; $('where').innerHTML = '';
-  drawGutter();
+  code.value = text;   // also clears any error mark
   setUnsaved(false);
 }
 
@@ -511,7 +437,7 @@ $('run').onclick = async () => {
   refresh('Running…');
   $('stdout').textContent = $('stderr').textContent = '';
   $('variables').innerHTML = '';
-  markError('');
+  code.clearError();
   $('stdout').after($('stdin-row'));             // typing for input() goes under the program's output
   setTimeout(() => $('stdin').focus());        // ready for the program's input()
   const show = ({ stdout, stderr }) => {
@@ -522,7 +448,7 @@ $('run').onclick = async () => {
   try {
     const result = await link.run(editor.value, { onOutput: show });
     show(result);
-    markError(result.stderr);
+    code.markError(result.stderr);
     busy = 'files';
     refresh('Reading variables…');
     await updateVariables();
@@ -638,15 +564,6 @@ replInput.addEventListener('keydown', e => {
 replInput.addEventListener('input', fitReplInput);
 $('repl-clear').onclick = () => { replLog.textContent = ''; replInput.focus(); };
 
-// Tab inserts four spaces rather than leaving the editor
-editor.addEventListener('keydown', e => {
-  if (e.key !== 'Tab') return;
-  e.preventDefault();
-  const s = editor.selectionStart;
-  editor.setRangeText('    ', s, editor.selectionEnd, 'end');
-  setUnsaved(true);
-  drawGutter();
-});
 </script>
 </body>
 </html>
