@@ -14,6 +14,10 @@
   .intro { margin: 0.5rem 0; }
   .bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.75rem 0; }
   #status { color: #666; }
+  .connection { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; color: #444; }
+  .connection .dot { width: 0.65rem; height: 0.65rem; border-radius: 50%; border: 2px solid #999; box-sizing: border-box; }
+  .connection.connected .dot { background: #2e9d4f; border-color: #2e9d4f; }
+  .connection.connecting .dot { border-color: #c98a00; }
   #filename { font: 0.95rem ui-monospace, monospace; width: 12rem; padding: 0.15rem 0.4rem; }
   #unsaved { color: #8a5a00; font-size: 0.9rem; }
 
@@ -82,10 +86,11 @@ click <b>Connect</b> and choose it from the list, then <b>Run</b> the program be
 Works in Chrome, Edge, and Firefox 151 or later.</p>
 
 <div class="bar">
-  <button id="connect" title="Shift-click to choose a different board">Connect</button>
+  <span class="connection" id="connection" role="status"><span class="dot" aria-hidden="true"></span><span id="connection-text">Not connected</span></span>
+  <button id="connect" title="Connect to your Pico (Shift-click to choose a different board). Disconnect releases it for other programs.">Connect</button>
   <button id="run" disabled>Run</button>
   <button id="stop" disabled>Stop</button>
-  <span id="status">Not connected</span>
+  <span id="status"></span>
 </div>
 
 <div class="bar">
@@ -147,7 +152,7 @@ Works in Chrome, Edge, and Firefox 151 or later.</p>
 <div id="variables"><p class="none">Run your program to see its variables when it finishes or stops.</p></div>
 
 <script type="module">
-import { PicoLink, choosePort } from './src/picolink.js';
+import { Connection } from './src/connection.js';
 import { createEditor } from './src/editor.js';
 import { highlight } from './src/highlight.js';
 import { inspectGlobals } from './src/inspector.js';
@@ -174,7 +179,8 @@ const code = createEditor({ value: STARTER, rows: 14, id: 'editor' });
 $('code').append(code.element);
 $('where-goes-here').replaceWith(code.where);
 const editor = code.textarea;
-let link = null;
+const connection = new Connection(navigator.serial);
+let link = null;           // connection.link, kept here for the many places that use it
 let busy = false;          // false, 'running' (a program) or 'files' (a file operation)
 let picoDir = '/';         // folder shown in the Pico files panel
 let localHandle = null;    // where "Save to computer" writes, once known (Chrome and Edge)
@@ -186,7 +192,9 @@ editor.addEventListener('input', () => setUnsaved(true));   // typing, pasting o
 function refresh(status) {
   if (status) $('status').textContent = status;
   const ready = !!link && !busy;
-  $('connect').disabled = !!link;
+  // Disconnecting is allowed while a program runs (it's stopped first), but not mid-way through a file operation
+  $('connect').disabled = connection.state === 'connecting' || busy === 'files';
+  $('connect').textContent = link ? 'Disconnect' : 'Connect';
   for (const id of ['run', 'save-pico', 'save-main', 'new-folder', 'reload', 'install', 'repl-input']) $(id).disabled = !ready;
   $('repl-input').placeholder = link ? '' : 'Connect to use the REPL';
   $('stop').disabled = busy !== 'running';
@@ -232,29 +240,37 @@ async function fileTask(message, action) {
   }
 }
 
-// --- connecting
+// --- connecting and disconnecting
+let disconnecting = false;   // true while we let go of the Pico ourselves, rather than it being unplugged
+
+connection.onChange(state => {
+  link = connection.link;
+  $('connection').className = `connection ${state}`;
+  $('connection-text').textContent = { connected: 'Connected', connecting: 'Connecting…', disconnected: 'Not connected' }[state];
+  if (state === 'disconnected') {
+    busy = false;
+    $('pico-files').innerHTML = '';
+    $('files-note').textContent = 'Connect to see the files on your Pico.';
+    $('files-note').hidden = false;
+    refresh(disconnecting ? 'Disconnected: other programs can use the Pico now' : 'Pico disconnected');
+  } else refresh();
+});
+
 $('connect').onclick = async event => {
   if (!('serial' in navigator)) return refresh('This browser has no Web Serial: use Chrome, Edge or Firefox 151+');
+  if (link) {
+    disconnecting = true;
+    try { await connection.disconnect(); } finally { disconnecting = false; }
+    return;
+  }
   try {
     // Reuses an already-allowed Pico; Shift-click to choose a different board
-    const port = await choosePort(navigator.serial, { ask: event.shiftKey });
-    link = new PicoLink(port);
-    await link.open();
-    refresh('Connected');
-    await fileTask('Reading the Pico\'s files…', async () => { await showPicoFolder('/'); return 'Connected'; });
+    await connection.connect({ ask: event.shiftKey });
+    await fileTask('Reading the Pico\'s files…', async () => { await showPicoFolder('/'); return 'Ready'; });
   } catch (e) {
-    link = null;
     refresh(`Could not connect: ${e.message}. Close other tabs or programs using the Pico, unplug it and plug it back in. More in Help.`);
   }
 };
-
-navigator.serial?.addEventListener('disconnect', () => {
-  link = null; busy = false;
-  $('pico-files').innerHTML = '';
-  $('files-note').textContent = 'Connect to see the files on your Pico.';
-  $('files-note').hidden = false;
-  refresh('Pico disconnected');
-});
 
 // --- files on the computer
 $('open').onclick = async () => {
@@ -449,6 +465,7 @@ $('run').onclick = async () => {
     const result = await link.run(editor.value, { onOutput: show });
     show(result);
     code.markError(result.stderr);
+    if (!connection.connected) return;           // disconnected while it ran: nothing more to read
     busy = 'files';
     refresh('Reading variables…');
     await updateVariables();
@@ -518,6 +535,7 @@ async function runRepl() {
     });
     output.textContent = stdout;
     if (stderr) logRepl(escapeHtml(stderr.replace(/\r/g, '')), 'err');
+    if (!connection.connected) return;           // disconnected while it ran: nothing more to read
     busy = 'files';
     refresh('Reading variables…');
     await updateVariables();

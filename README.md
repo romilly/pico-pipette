@@ -8,6 +8,8 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 
 ## What it does
 
+- **Connect and disconnect**: a dot shows whether you're connected, and **Disconnect** releases the Pico's USB
+  connection so other programs (Thonny, another tab) can use it.
 - **Write code** in an editor with Python syntax colouring and line numbers.
 - **Run code on the Pico** and see its output as it arrives. **Stop** a program that's still running.
   Programs can use `input()`: type to them in the box that appears while they run.
@@ -60,6 +62,19 @@ const { stdout, stderr } = await link.run(editor.value);
 editor.markError(stderr);   // returns the failing line's number, or null
 ```
 
+To offer a Connect/Disconnect toggle and show the connection's state, use a `Connection`.
+It reconnects to an already-allowed Pico without asking, notices when the board is unplugged, and stops any
+running program before releasing the port:
+
+```js
+import { Connection } from './src/connection.js';
+
+const connection = new Connection(navigator.serial);
+connection.onChange(state => { /* 'disconnected', 'connecting' or 'connected': update your page */ });
+button.onclick = () => connection.toggle();
+const link = await connection.connect();   // the link, connecting first if need be
+```
+
 The editor also has `textarea` (its `input` event fires on every edit, Tab included), `clearError()`,
 `selectLine(n)`, and `refresh()` for after changing `textarea.value` directly.
 Its classes start `pipette-`, and syntax colours use `tok-` classes; a page's own CSS can restyle either.
@@ -73,6 +88,7 @@ check.html      the connection checker
 examples/       how other pages can use Pipette
 src/
   picolink.js     runs code on a Pico over Web Serial, using MicroPython's raw REPL
+  connection.js   connecting to a Pico and letting it go, with its state for the page to show
   micropython.js  runs code in MicroPython compiled to WebAssembly (for tests, and a future "no Pico" mode)
   editor.js       the code editor component (line numbers, colours, error line), used by the pages
   traceback.js    finds the failing line in a MicroPython traceback

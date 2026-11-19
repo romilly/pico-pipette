@@ -185,3 +185,15 @@ test('typing sent before the program has started waits for it, rather than going
   assert.equal(stdout, 'Name? early\r\nHello, early\r\n');
   await link.close();
 });
+
+test('running says whether a program is running, and settles when it ends', async () => {
+  const link = await connect(() => ({ stdout: 'tick', forever: true }));
+  assert.equal(link.running, null);
+  const result = link.run('while True: pass');
+  await link.codeSent;
+  assert.ok(link.running);
+  await link.interrupt();
+  await link.running;
+  assert.match((await result).stderr, /KeyboardInterrupt/);
+  assert.equal(link.running, null);
+});

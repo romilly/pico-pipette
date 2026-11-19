@@ -32,6 +32,7 @@ export class PicoLink {
     this.encoder = new TextEncoder();
     this.onData = () => {};   // optional: called with everything received, e.g. for a log
     this.codeSent = Promise.resolve();   // settles once the running program's code has reached the Pico
+    this.running = null;                 // while a program runs: a promise that settles when it ends
   }
 
   async open() {
@@ -70,10 +71,13 @@ export class PicoLink {
   async run(code, { onOutput = () => {}, reset = true } = {}) {
     let sent;
     this.codeSent = new Promise(resolve => { sent = resolve; });
+    const running = this.execute(code, onOutput, reset, () => sent());
+    this.running = running.then(() => {}, () => {});
     try {
-      return await this.execute(code, onOutput, reset, () => sent());
+      return await running;
     } finally {
       sent();
+      this.running = null;
     }
   }
 
