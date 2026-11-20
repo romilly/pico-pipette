@@ -74,6 +74,19 @@ el.addEventListener('connection', (e) => console.log(e.detail.state));   // 'con
 
 Several elements on one page can share one Pico: give each the same `Connection`
 (`other.connection = first.connection`) before adding it to the page.
+**Start again** puts back the starting code. Without Web Serial (on a phone, say), Run and Connect are disabled
+and the element says what's needed.
+
+To do something after connecting and before each run, such as saving a module the lesson's code imports,
+set `beforeRun`; `say(text)` shows what it's doing in the output:
+
+```js
+import { writeFile } from 'https://cdn.jsdelivr.net/npm/pico-pipette/src/picofs.js';
+el.beforeRun = async (link, { say }) => {
+  say('Saving helpers.py on the Pico…');
+  await writeFile(link, '/helpers.py', helperCode);
+};
+```
 
 You can also install it from npm (`npm install pico-pipette`) and `import 'pico-pipette'`.
 

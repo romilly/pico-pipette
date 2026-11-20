@@ -1,4 +1,4 @@
-// <pico-pipette>: a code editor with Connect, Run and Stop buttons and the program's output, as one HTML element.
+// <pico-pipette>: a code editor with Connect, Run, Stop and Start again buttons and the program's output, as one HTML element.
 //
 //   <script type="module" src="https://cdn.jsdelivr.net/npm/pico-pipette/src/pico-pipette.js"></script>
 //   <pico-pipette rows="10">
@@ -10,11 +10,14 @@
 //   el.value                   get or set the code
 //   el.run()                   run it (connecting first if need be); resolves to { stdout, stderr }
 //   el.stop()                  interrupt a running program
+//   el.beforeRun               optional async (link, { say }) => ..., called after connecting and before each run,
+//                              e.g. to save files the code imports; say(text) shows what it's doing in the output
 //   el.connection              its Connection (see connection.js). Elements on one page can share a Pico:
 //                              other.connection = el.connection, set before other is added to the page.
 //   'done' event               after each run; event.detail is { stdout, stderr }
 //   'connection' event         when the connection changes; event.detail.state is 'connected', 'connecting' or 'disconnected'
 //
+// Start again puts back the starting code. Without Web Serial (e.g. on a phone), Run and Connect are disabled.
 // A DOM component (like editor.js). It adds its own styles to the page once; its classes start pipette-.
 import { createEditor } from './editor.js';
 import { Connection } from './connection.js';
@@ -64,8 +67,12 @@ export class PicoPipette extends HTMLElement {
     if (this.editor) return;   // built already: the element was moved
     addStyles();
     this.connection ??= new Connection(globalThis.navigator?.serial);
-    this.editor = createEditor({ value: dedent(this.textContent), rows: Number(this.getAttribute('rows')) || 12 });
-    this.buttons = { connect: button('connect', 'Connect'), run: button('run', 'Run'), stop: button('stop', 'Stop') };
+    this.starter = dedent(this.textContent);
+    this.editor = createEditor({ value: this.starter, rows: Number(this.getAttribute('rows')) || 12 });
+    this.buttons = {
+      connect: button('connect', 'Connect'), run: button('run', 'Run'), stop: button('stop', 'Stop'),
+      reset: button('reset', 'Start again'),
+    };
     this.status = make('span', 'pipette-status');
     this.dot = make('span', 'pipette-connection');
     this.dot.setAttribute('role', 'status');
@@ -81,6 +88,7 @@ export class PicoPipette extends HTMLElement {
     this.buttons.connect.addEventListener('click', () => this.toggle());
     this.buttons.run.addEventListener('click', () => this.run());
     this.buttons.stop.addEventListener('click', () => this.stop());
+    this.buttons.reset.addEventListener('click', () => { this.editor.value = this.starter; });
     this.connection.onChange((state) => {
       this.showState(state);
       this.dispatchEvent(new CustomEvent('connection', { bubbles: true, detail: { state } }));
@@ -88,7 +96,10 @@ export class PicoPipette extends HTMLElement {
     this.running = false;
     this.showState(this.connection.state);
     this.showRunning();
+    if (!this.canRun) this.error.textContent = 'To run code on a Pico, open this page in Chrome or Edge on a computer.';
   }
+
+  get canRun() { return Boolean(this.connection.serial); }
 
   get value() { return this.editor ? this.editor.value : dedent(this.textContent); }
   set value(code) {
@@ -113,6 +124,10 @@ export class PicoPipette extends HTMLElement {
     this.editor.clearError();
     try {
       const link = await this.connection.connect();
+      if (this.beforeRun) {
+        await this.beforeRun(link, { say: (text) => { this.output.textContent = text; } });
+        this.output.textContent = '';
+      }
       const result = await link.run(this.editor.value, {
         onOutput: ({ stdout }) => { this.output.textContent = stdout; },
       });
@@ -138,13 +153,13 @@ export class PicoPipette extends HTMLElement {
 
   showState(state) {
     this.buttons.connect.textContent = state === 'connected' ? 'Disconnect' : 'Connect';
-    this.buttons.connect.disabled = state === 'connecting';
+    this.buttons.connect.disabled = state === 'connecting' || !this.canRun;
     this.dot.className = `pipette-connection ${state}`;
     this.status.textContent = STATUS[state];
   }
 
   showRunning() {
-    this.buttons.run.disabled = this.running;
+    this.buttons.run.disabled = this.running || !this.canRun;
     this.buttons.stop.disabled = !this.running;
   }
 }

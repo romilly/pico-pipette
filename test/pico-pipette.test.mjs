@@ -36,10 +36,10 @@ after(async () => {
 // A fresh page holding one <pico-pipette> (window.el) containing code, connected through a fake Pico.
 // The fake's run() replies with reply, or with no reply keeps running until interrupted.
 // window.ran lists the code it was asked to run; window.done lists the details of 'done' events.
-async function fresh(code, reply) {
+async function fresh(code, reply, { noSerial = false, beforeRun = false } = {}) {
   page = await browser.newPage();
   await page.goto(`${base}/test/blank.html`);
-  await page.evaluate(async ({ code, reply }) => {
+  await page.evaluate(async ({ code, reply, noSerial, beforeRun }) => {
     const { Connection } = await import('/src/connection.js');
     await import('/src/pico-pipette.js');
     window.ran = [];
@@ -59,11 +59,21 @@ async function fresh(code, reply) {
     const serial = { addEventListener() {}, getPorts: async () => [{ getInfo: () => ({ usbVendorId: 0x2E8A }) }] };
     const el = document.createElement('pico-pipette');
     el.textContent = code;
-    el.connection = new Connection(serial, { makeLink: () => link });
+    el.connection = new Connection(noSerial ? null : serial, { makeLink: () => link });
+    window.steps = [];
+    if (beforeRun) {
+      el.beforeRun = async (l, { say }) => {
+        window.steps.push(l === link ? 'before run, given the link' : 'before run, given something else');
+        say('Saving helpers…');
+        window.said = document.querySelector('pico-pipette .pipette-output').textContent;
+      };
+    }
+    const run = link.run;
+    link.run = (...args) => { window.steps.push('run'); return run(...args); };
     el.addEventListener('done', (e) => window.done.push(e.detail));
     document.body.append(el);
     window.el = el;
-  }, { code, reply });
+  }, { code, reply, noSerial, beforeRun });
 }
 
 const inside = (selector, fn = (e) => e.textContent) => page.$eval(`pico-pipette ${selector}`, fn);
@@ -139,4 +149,30 @@ test('Disconnect lets the Pico go', async (t) => {
   await page.click('pico-pipette button[name=connect]');
   await page.waitForFunction(() => !window.el.connection.connected);
   assert.equal(await inside('button[name=connect]'), 'Connect');
+});
+
+test('beforeRun is called with the link after connecting and before the code runs, and can say what it is doing', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh('print(1)\n', { stdout: '1\r\n', stderr: '' }, { beforeRun: true });
+  await page.click('pico-pipette button[name=run]');
+  await page.waitForFunction(() => window.done.length === 1);
+  assert.deepEqual(await page.evaluate(() => window.steps), ['before run, given the link', 'run']);
+  assert.equal(await page.evaluate(() => window.said), 'Saving helpers…');
+  assert.equal(await inside('.pipette-output'), '1\r\n');
+});
+
+test('Start again puts back the starting code', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh('x = 1\n');
+  await page.fill('pico-pipette textarea', 'x = 2\n');
+  await page.click('pico-pipette button[name=reset]');
+  assert.equal(await inside('textarea', (e) => e.value), 'x = 1\n');
+});
+
+test('without Web Serial, Run and Connect are off and it says what is needed', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh('print(1)\n', undefined, { noSerial: true });
+  assert.equal(await disabled('run'), true);
+  assert.equal(await disabled('connect'), true);
+  assert.match(await inside('.pipette-error'), /Chrome or Edge/);
 });
