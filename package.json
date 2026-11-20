@@ -2,9 +2,26 @@
   "name": "pico-pipette",
   "version": "0.1.0",
   "description": "Program, debug and manage a Raspberry Pi Pico running MicroPython, from a web browser",
+  "keywords": [
+    "raspberry-pi-pico",
+    "micropython",
+    "web-serial",
+    "web-components",
+    "custom-element",
+    "education"
+  ],
+  "homepage": "https://romilly.github.io/pico-pipette/",
+  "bugs": "https://github.com/romilly/pico-pipette/issues",
   "type": "module",
   "license": "MIT",
   "repository": "github:romilly/pico-pipette",
+  "exports": {
+    ".": "./src/pico-pipette.js",
+    "./src/*": "./src/*"
+  },
+  "files": [
+    "src"
+  ],
   "scripts": {
     "test": "node --test"
   },

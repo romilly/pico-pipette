@@ -4,86 +4,35 @@
 <meta charset="utf-8">
 <title>Lesson 1: Blink (a Pico Pipette example)</title>
 <!--
-  How a course page can use Pico Pipette's modules: a lesson with its own code editor.
-  Here the modules are imported from ../src/. A page hosted elsewhere can import them from
-  the published copy instead, e.g. https://romilly.github.io/pico-pipette/src/picolink.js
+  How a course page can use Pico Pipette: the <pico-pipette> element is a code editor with
+  Connect, Run and Stop buttons and the program's output. Here it's loaded from ../src/.
+  A page hosted elsewhere can load the published copy instead:
+    <script type="module" src="https://cdn.jsdelivr.net/npm/pico-pipette/src/pico-pipette.js"></script>
 -->
+<script type="module" src="../src/pico-pipette.js"></script>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 45rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
-  pre { background: #f4f4f4; padding: 0.75rem; min-height: 2rem; white-space: pre-wrap; }
-  #error { color: #b3261e; }
-  .bar { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
-  #status { color: #666; }
 </style>
 </head>
 <body>
 <h1>Lesson 1: Blink</h1>
 <p>Every Pico has a small LED on the board. This program makes it blink ten times.
-Click <b>Connect</b>, choose your Pico, then click <b>Run</b>.</p>
+Click <b>Run</b> and choose your Pico.</p>
 <p>Then try making it blink faster: change <code>0.5</code> to <code>0.1</code> and run it again.
 What happens if you misspell <code>led</code> on line 7?</p>
 
-<div id="editor"></div>
+<pico-pipette rows="12">
+  from machine import Pin
+  import time
 
-<div class="bar">
-  <button id="connect">Connect</button>
-  <button id="run" disabled>Run</button>
-  <button id="stop" disabled>Stop</button>
-  <span id="status"></span>
-</div>
-<pre id="output"></pre>
-<p id="error"></p>
+  led = Pin("LED", Pin.OUT)
 
-<script type="module">
-import { PicoLink } from '../src/picolink.js';
-import { createEditor } from '../src/editor.js';
+  for i in range(10):
+      led.toggle()
+      print("blink", i)
+      time.sleep(0.5)
 
-const $ = id => document.getElementById(id);
-let link;
-
-// The code editor: line numbers, colours, and the failing line marked after an error
-const code = createEditor({ rows: 11, value: `from machine import Pin
-import time
-
-led = Pin("LED", Pin.OUT)
-
-for i in range(10):
-    led.toggle()
-    print("blink", i)
-    time.sleep(0.5)
-
-print("done")
-` });
-$('editor').append(code.element, code.where);
-
-$('connect').onclick = async () => {
-  try {
-    link = new PicoLink(await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x2E8A }] }));
-    await link.open();
-    $('connect').disabled = true;
-    $('run').disabled = false;
-    $('status').textContent = 'Connected';
-  } catch (e) {
-    $('status').textContent = `Could not connect: ${e.message}`;
-  }
-};
-
-$('run').onclick = async () => {
-  $('run').disabled = true;
-  $('stop').disabled = false;
-  $('error').textContent = '';
-  code.clearError();
-  const { stdout, stderr } = await link.run(code.value, {
-    onOutput: ({ stdout }) => { $('output').textContent = stdout; },
-  });
-  $('output').textContent = stdout;
-  // markError shows "Line n: ..." under the editor; other errors (no line in the program) go here
-  if (stderr && !code.markError(stderr)) $('error').textContent = stderr.trim().split('\n').at(-1);
-  $('run').disabled = false;
-  $('stop').disabled = true;
-};
-
-$('stop').onclick = () => link.interrupt();
-</script>
+  print("done")
+</pico-pipette>
 </body>
 </html>

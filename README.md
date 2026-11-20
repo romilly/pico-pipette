@@ -42,10 +42,46 @@ browsers only allow Web Serial and module scripts on `https://` or `localhost` p
 
 ## Using Pipette in your own pages
 
-The modules in `src/` have no dependencies and no build step, so a course or tutorial page can import them directly.
-`examples/blink-lesson.html` is a complete lesson page with its own code editor.
-Pages hosted elsewhere should be able to import the published copies,
-such as `https://romilly.github.io/pico-pipette/src/picolink.js`.
+### The `<pico-pipette>` element
+
+The quickest way: one script tag, then a `<pico-pipette>` element wherever you want a code editor
+with **Connect**, **Run** and **Stop** buttons and the program's output. No install, no build step:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/pico-pipette/src/pico-pipette.js"></script>
+
+<pico-pipette rows="8">
+  from machine import Pin
+  led = Pin("LED", Pin.OUT)
+  led.toggle()
+</pico-pipette>
+```
+
+The code inside the element is its starting code; the indentation all its lines share is removed.
+Write `<` as `&lt;` and `&` as `&amp;` there, as anywhere in HTML.
+**Run** connects first if need be. When a program fails, its failing line is marked in the editor.
+`examples/blink-lesson.html` is a complete lesson page using it.
+
+From JavaScript:
+
+```js
+const el = document.querySelector('pico-pipette');
+el.value = 'print("hi")';                 // get or set the code
+const { stdout, stderr } = await el.run(); // run it; el.stop() interrupts a running program
+el.addEventListener('done', (e) => console.log(e.detail.stdout));
+el.addEventListener('connection', (e) => console.log(e.detail.state));   // 'connected', 'connecting', 'disconnected'
+```
+
+Several elements on one page can share one Pico: give each the same `Connection`
+(`other.connection = first.connection`) before adding it to the page.
+
+You can also install it from npm (`npm install pico-pipette`) and `import 'pico-pipette'`.
+
+### The modules
+
+For a page of your own design, the modules in `src/` have no dependencies and no build step, so a page can import
+them directly, from your own copy or from the published package,
+such as `https://cdn.jsdelivr.net/npm/pico-pipette/src/picolink.js`.
 
 ```js
 import { PicoLink } from './src/picolink.js';
@@ -90,6 +126,7 @@ src/
   picolink.js     runs code on a Pico over Web Serial, using MicroPython's raw REPL
   connection.js   connecting to a Pico and letting it go, with its state for the page to show
   micropython.js  runs code in MicroPython compiled to WebAssembly (for tests, and a future "no Pico" mode)
+  pico-pipette.js the <pico-pipette> element: editor, Connect/Run/Stop and output in one tag
   editor.js       the code editor component (line numbers, colours, error line), used by the pages
   traceback.js    finds the failing line in a MicroPython traceback
   highlight.js    colours Python code for the editor
