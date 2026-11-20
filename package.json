@@ -23,7 +23,8 @@
     "src"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "version": "node scripts/set-version.mjs && git add src/version.js"
   },
   "devDependencies": {
     "@micropython/micropython-webassembly-pyscript": "^1.29.0-6",

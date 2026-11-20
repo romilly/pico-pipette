@@ -17,6 +17,8 @@ See README.md for features and layout.
   the whole editor; `index.html` is just a heading and this element). Keep their attributes, properties and events
   stable, and keep `<pipette-ide>`'s ids: demo scripts use them. Other pages (`check.html`, `examples/`) hold their own UI.
 - The npm package ships only `src/` (plus README, LICENSE). Check with `npm pack --dry-run` before publishing.
+- Change the version with `npm version patch` (or `minor`), never by hand: its hook copies it into `src/version.js`,
+  which the editor page shows (a test checks they match).
 - Everything that talks to a board goes through the port: an object with
   `run(code, { onOutput, reset = true }) -> { stdout, stderr }` and `interrupt()`, plus optionally `sendInput(line)`.
   Adapters: `PicoLink` (Web Serial, `src/picolink.js`) and `createMicroPythonLink` (WebAssembly MicroPython, `src/micropython.js`).
