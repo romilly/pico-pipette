@@ -1,6 +1,6 @@
 {
   "name": "pico-pipette",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Program, debug and manage a Raspberry Pi Pico running MicroPython, from a web browser",
   "keywords": [
     "raspberry-pi-pico",

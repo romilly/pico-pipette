@@ -77,6 +77,22 @@ Several elements on one page can share one Pico: give each the same `Connection`
 
 You can also install it from npm (`npm install pico-pipette`) and `import 'pico-pipette'`.
 
+### The `<pipette-ide>` element
+
+The whole editor, as on https://romilly.github.io/pico-pipette/, in one tag: connection, files on your computer
+and on the Pico, packages, output, typing to `input()`, the REPL and the variables.
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/pico-pipette/src/pipette-ide.js"></script>
+
+<pipette-ide>
+  print("Hello from the Pico")
+</pipette-ide>
+```
+
+With no code inside, it starts with a blink program. It has `value` and `connection` and fires `connection` events,
+like `<pico-pipette>`. Its parts have fixed ids (`#run`, `#editor`...), so use one per page.
+
 ### The modules
 
 For a page of your own design, the modules in `src/` have no dependencies and no build step, so a page can import
@@ -118,7 +134,7 @@ Its classes start `pipette-`, and syntax colours use `tok-` classes; a page's ow
 ## How it's built
 
 ```
-index.html      the editor
+index.html      the editor page (a <pipette-ide> with a heading)
 help.html       help for people using the editor
 check.html      the connection checker
 examples/       how other pages can use Pipette
@@ -127,6 +143,8 @@ src/
   connection.js   connecting to a Pico and letting it go, with its state for the page to show
   micropython.js  runs code in MicroPython compiled to WebAssembly (for tests, and a future "no Pico" mode)
   pico-pipette.js the <pico-pipette> element: editor, Connect/Run/Stop and output in one tag
+  pipette-ide.js  the <pipette-ide> element: the whole editor in one tag (index.html is just this)
+  dedent.js       tidies the code written inside an element
   editor.js       the code editor component (line numbers, colours, error line), used by the pages
   traceback.js    finds the failing line in a MicroPython traceback
   highlight.js    colours Python code for the editor

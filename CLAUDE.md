@@ -12,9 +12,10 @@ See README.md for features and layout.
 - Test first. Write or change a failing test, see it fail, then make it pass.
 - Keep it simple: plain JavaScript ES modules, no build step, no frameworks, no runtime dependencies.
 - Code in `src/` must not touch the DOM, except `localfiles.js`, `editor.js` (the editor component, which other projects
-  such as course-platform also use: keep its API stable) and `pico-pipette.js` (the `<pico-pipette>` element, published
-  on npm as `pico-pipette`: keep its attributes, properties and events stable too). Pages (`index.html`, `check.html`,
-  `examples/`) hold the UI.
+  such as course-platform also use: keep its API stable), and the two elements published on npm as `pico-pipette`:
+  `pico-pipette.js` (`<pico-pipette>`, a small editor with Run, for lessons) and `pipette-ide.js` (`<pipette-ide>`,
+  the whole editor; `index.html` is just a heading and this element). Keep their attributes, properties and events
+  stable, and keep `<pipette-ide>`'s ids: demo scripts use them. Other pages (`check.html`, `examples/`) hold their own UI.
 - The npm package ships only `src/` (plus README, LICENSE). Check with `npm pack --dry-run` before publishing.
 - Everything that talks to a board goes through the port: an object with
   `run(code, { onOutput, reset = true }) -> { stdout, stderr }` and `interrupt()`, plus optionally `sendInput(line)`.

@@ -79,6 +79,17 @@ test('shows the code it contains, without the indentation, in an editor', async 
   assert.equal(await disabled('stop'), true);
 });
 
+test('a dot and a word show the connection', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh('print(1)\n', { stdout: '1\r\n', stderr: '' });
+  assert.equal(await inside('.pipette-connection', (e) => e.className), 'pipette-connection disconnected');
+  assert.equal(await inside('.pipette-status'), 'Not connected');
+  await page.click('pico-pipette button[name=connect]');
+  await page.waitForFunction(() => window.el.connection.connected);
+  assert.equal(await inside('.pipette-connection', (e) => e.className), 'pipette-connection connected');
+  assert.equal(await inside('.pipette-connection .dot', (e) => getComputedStyle(e).backgroundColor), 'rgb(46, 157, 79)');
+});
+
 test('value sets the code', async (t) => {
   if (skip) return t.skip(skip);
   await fresh('x = 1\n');

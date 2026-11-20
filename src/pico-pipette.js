@@ -18,17 +18,21 @@
 // A DOM component (like editor.js). It adds its own styles to the page once; its classes start pipette-.
 import { createEditor } from './editor.js';
 import { Connection } from './connection.js';
+import { dedent } from './dedent.js';
 
 const STYLES = `
 pico-pipette { display: block; }
 .pipette-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
-.pipette-status { color: #666; }
+.pipette-connection { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; color: #444; }
+.pipette-connection .dot { width: 0.65rem; height: 0.65rem; border-radius: 50%; border: 2px solid #999; box-sizing: border-box; }
+.pipette-connection.connected .dot { background: #2e9d4f; border-color: #2e9d4f; }
+.pipette-connection.connecting .dot { border-color: #c98a00; }
 .pipette-output { background: #f4f4f4; padding: 0.75rem; min-height: 2rem; white-space: pre-wrap; margin: 0.5rem 0; }
 .pipette-error { color: #b3261e; margin: 0.5rem 0; }
 .pipette-error:empty { display: none; }
 `;
 
-const STATUS = { connected: 'Connected', connecting: 'Connecting…', disconnected: '' };
+const STATUS = { connected: 'Connected', connecting: 'Connecting…', disconnected: 'Not connected' };
 
 // Added first in <head>, so a page's own rules win where they differ.
 function addStyles() {
@@ -39,13 +43,7 @@ function addStyles() {
   document.head.prepend(style);
 }
 
-// Code as written inside the element: drop blank lines at either end and the indentation all lines share.
-export function dedent(text) {
-  if (!text.trim()) return '';
-  const lines = text.replace(/^\s*\n/, '').trimEnd().split('\n');
-  const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^[ \t]*/)[0].length));
-  return lines.map((l) => l.slice(indent)).join('\n') + '\n';
-}
+export { dedent };   // part of the published API since 0.1.0
 
 function make(tag, className, text) {
   const node = document.createElement(tag);
@@ -69,10 +67,15 @@ export class PicoPipette extends HTMLElement {
     this.editor = createEditor({ value: dedent(this.textContent), rows: Number(this.getAttribute('rows')) || 12 });
     this.buttons = { connect: button('connect', 'Connect'), run: button('run', 'Run'), stop: button('stop', 'Stop') };
     this.status = make('span', 'pipette-status');
+    this.dot = make('span', 'pipette-connection');
+    this.dot.setAttribute('role', 'status');
+    const dot = make('span', 'dot');
+    dot.setAttribute('aria-hidden', 'true');
+    this.dot.append(dot, this.status);
     this.output = make('pre', 'pipette-output');
     this.error = make('p', 'pipette-error');
     const bar = make('div', 'pipette-bar');
-    bar.append(...Object.values(this.buttons), this.status);
+    bar.append(this.dot, ...Object.values(this.buttons));
     this.replaceChildren(this.editor.element, this.editor.where, bar, this.output, this.error);
 
     this.buttons.connect.addEventListener('click', () => this.toggle());
@@ -136,6 +139,7 @@ export class PicoPipette extends HTMLElement {
   showState(state) {
     this.buttons.connect.textContent = state === 'connected' ? 'Disconnect' : 'Connect';
     this.buttons.connect.disabled = state === 'connecting';
+    this.dot.className = `pipette-connection ${state}`;
     this.status.textContent = STATUS[state];
   }
 
