@@ -17,6 +17,8 @@ Included demos:
 - `intro.yaml`: Pico Pipette in a minute (connect, run, an error, Stop, main.py, a package).
   It saves its program as `main.py` on the Pico and installs `ssd1306`.
 - `repl-and-input.yaml`: a program using `input()`, then the REPL exploring what it left behind.
+- `tabs.yaml`: a program split across two tabs, the warning when a module's changes aren't on the Pico,
+  and an error in the module taking you to its tab. It saves `helpers.py` to the Pico.
 
 ## Editing demos in VS Code
 
@@ -58,9 +60,11 @@ Each step has exactly one action.
 |---|---|
 | `caption: text` | Shows a caption at the bottom of the page. `caption: ""` hides it. |
 | `pause: 2` | Waits this many seconds (scaled by pace). |
-| `click: run` | Glides the pointer to a button and clicks it. Buttons: `connect`, `run`, `stop`, `open`, `save-local`, `save-pico`, `save-main`, `new-folder`, `refresh`, `install`, `send`, `clear-repl`. Or `click: { selector: "#editor", x: 0.2, y: 0.5 }` for anything else. |
+| `click: run` | Glides the pointer to a button and clicks it. Buttons: `connect`, `run`, `stop`, `open`, `save-local`, `save-pico`, `save-main`, `new-folder`, `refresh`, `install`, `send`, `clear-repl`, `new-tab`. Or `click: { selector: "#editor", x: 0.2, y: 0.5 }` for anything else. |
 | `wait: connected` | Waits until connected, until the program has `finished` (or stopped), or until the page is `idle`. |
 | `type: \|` | Replaces the program in the editor, typing it in. |
+| `tab: helpers.py` | Clicks the tab of an open file, by its name. `click: new-tab` starts a new, empty tab. |
+| `rename: helpers.py` | Types a new name for the tab showing into the file name box. |
 | `edit: { find: led, replace: leed, in: led.toggle }` | Points at some text in the editor, selects it and types over it. `in` is optional: it picks which occurrence. |
 | `run:` | Clicks Run and waits for the program to finish. `run: { wait: false }` carries straight on, for example to `input` or `stop`. |
 | `stop:` | Clicks Stop and waits until the program has stopped. |

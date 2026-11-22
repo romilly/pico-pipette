@@ -6,7 +6,7 @@ export const BUTTONS = {
   connect: '#connect', run: '#run', stop: '#stop',
   open: '#open', 'save-local': '#save-local', 'save-pico': '#save-pico', 'save-main': '#save-main',
   'new-folder': '#new-folder', refresh: '#reload', install: '#install',
-  send: '#send-input', 'clear-repl': '#repl-clear',
+  send: '#send-input', 'clear-repl': '#repl-clear', 'new-tab': '#new-tab',
 };
 
 const SECTIONS = { editor: '.code', output: '#stdout', repl: '#repl', variables: '#variables' };
@@ -14,7 +14,7 @@ const LONG = { timeout: 120_000 };   // long enough to pick the Pico by hand on 
 
 // Waiting for the page
 const WAITS = {
-  connected: page => page.waitForFunction(() => document.getElementById('status').textContent === 'Connected'
+  connected: page => page.waitForFunction(() => document.getElementById('connection-text').textContent === 'Connected'
     && !document.getElementById('files').classList.contains('busy'), null, LONG),
   finished: page => page.waitForFunction(() => !document.getElementById('files').classList.contains('busy')
     && /^(Finished|Stopped|Something|Ready)/.test(document.getElementById('status').textContent), null, LONG),
@@ -36,6 +36,16 @@ export const ACTIONS = {
     await demo.typeText(code, 30);
   },
   edit: (demo, { find, replace, in: within = find }) => demo.edit(find, replace, within),
+  rename: async (demo, name) => {
+    await demo.clickOn('#filename', { x: 0.8 });
+    await demo.page.keyboard.press('ControlOrMeta+A');
+    await demo.typeText(name, 90);
+  },
+  tab: async (demo, name) => {
+    const tab = `#tabs .tab-name >> text=${JSON.stringify(name)}`;
+    if (!(await demo.page.locator(tab).count())) throw new Error(`no tab called ${name} is open`);
+    await demo.clickOn(tab);
+  },
   run: async (demo, options) => {
     await demo.clickOn('#run');
     if (options?.wait !== false) await WAITS.finished(demo.page);

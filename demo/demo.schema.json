@@ -34,7 +34,7 @@
     "button": {
       "type": "string",
       "enum": ["connect", "run", "stop", "open", "save-local", "save-pico", "save-main",
-               "new-folder", "refresh", "install", "send", "clear-repl"]
+               "new-folder", "refresh", "install", "send", "clear-repl", "new-tab"]
     },
     "text": { "type": "string" },
     "nothing": { "type": "null", "description": "Takes no value: write the action followed by a colon." },
@@ -65,6 +65,14 @@
           "description": "Wait until the Pico is connected, the program has finished or stopped, or nothing is in progress."
         },
         "type": { "type": "string", "description": "Replace the program in the editor, typing it in." },
+        "rename": {
+          "type": "string", "minLength": 1,
+          "description": "Type a new name for the tab showing into the file name box (e.g. after click: new-tab)."
+        },
+        "tab": {
+          "type": "string", "minLength": 1,
+          "description": "Click the tab of an open file, by its name (e.g. helpers.py). To start a new tab, use click: new-tab."
+        },
         "edit": {
           "type": "object", "required": ["find", "replace"], "additionalProperties": false,
           "description": "Point at some text in the editor, select it and type over it.",

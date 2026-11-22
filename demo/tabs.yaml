@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./demo.schema.json
+#
+# A program split across two files, each in its own tab.
+#   node demo/demo.mjs demo/tabs.yaml
+# It saves helpers.py to the Pico.
+
+title: Tabs and modules
+
+steps:
+  - caption: Split a program across files, one tab each
+  - click: connect
+  - wait: connected
+  - rename: main.py
+  - type: |
+      import helpers
+
+      for i in range(4):
+          print(i, helpers.double(i))
+  - pause: 1
+
+  - caption: Start a new tab for the helpers module
+  - click: new-tab
+  - rename: helpers.py
+  - type: |
+      def double(n):
+          return n * 2
+  - pause: 1
+
+  - caption: Run main.py before saving helpers.py to the Pico…
+  - tab: main.py
+  - run:
+  - caption: …and Pipette explains why it can't find your changes
+  - pause: 4
+
+  - caption: Save helpers.py to the Pico, and try again
+  - tab: helpers.py
+  - click: save-pico
+  - wait: idle
+  - tab: main.py
+  - run:
+  - pause: 3
+
+  - caption: An error inside helpers.py takes you straight to the line
+  - tab: helpers.py
+  - edit: { find: n * 2, replace: n / 0 }
+  - click: save-pico
+  - wait: idle
+  - tab: main.py
+  - run:
+  - pause: 4
+  - caption: ""

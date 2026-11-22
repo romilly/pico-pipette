@@ -41,3 +41,11 @@ test('files survive a reset, as they do on a Pico', async () => {
   await link.run("with open('/keep.txt', 'w') as f: f.write('kept')");
   assert.equal((await link.run("print(open('/keep.txt').read())")).stdout, 'kept\n');
 });
+
+test('a reset also forgets imported modules, as a soft reset on a Pico does', async () => {
+  const link = await createMicroPythonLink(loadMicroPython);
+  await link.run("open('/mod.py', 'w').write('X = 1')");
+  assert.equal((await link.run('import mod\nprint(mod.X)')).stdout, '1\n');
+  await link.run("open('/mod.py', 'w').write('X = 2')");
+  assert.equal((await link.run('import mod\nprint(mod.X)')).stdout, '2\n');
+});

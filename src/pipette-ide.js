@@ -9,7 +9,7 @@
 // The code inside the element is its starting code (common indentation removed; write < as &lt; and & as &amp;);
 // with none, it starts with a blink program.
 //
-//   el.value                   get or set the code
+//   el.value                   get or set the code in the tab that's showing
 //   el.connection              its Connection (see connection.js); set it before adding the element to share one
 //   'connection' event         when the connection changes; event.detail.state is 'connected', 'connecting' or 'disconnected'
 //
@@ -18,6 +18,8 @@
 // A DOM component (like editor.js). It adds its own styles to the page once.
 import { Connection } from './connection.js';
 import { createEditor } from './editor.js';
+import { Tabs } from './tabs.js';
+import { innermostFrame } from './traceback.js';
 import { highlight } from './highlight.js';
 import { inspectGlobals } from './inspector.js';
 import { evaluate, needsMore, History } from './repl.js';
@@ -49,6 +51,23 @@ pipette-ide .connection.connected .dot { background: #2e9d4f; border-color: #2e9
 pipette-ide .connection.connecting .dot { border-color: #c98a00; }
 pipette-ide #filename { font: 0.95rem ui-monospace, monospace; width: 12rem; padding: 0.15rem 0.4rem; }
 pipette-ide #unsaved { color: #8a5a00; font-size: 0.9rem; }
+/* Tabs: one per open file, above the code */
+pipette-ide #code { min-width: 0; }
+pipette-ide .tab-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.2rem; }
+pipette-ide .tab { display: inline-flex; align-items: center; border: 1px solid #ccc; border-bottom: 0; border-radius: 6px 6px 0 0;
+  background: #f1f1f1; font: 0.85rem ui-monospace, monospace; position: relative; top: 1px; }
+pipette-ide .tab.active { background: #fff; z-index: 2; }
+pipette-ide .tab-name { background: none; border: 0; padding: 0.3rem 0.15rem 0.3rem 0.6rem; font: inherit; color: #555; cursor: pointer; }
+pipette-ide .tab.active .tab-name { color: #111; }
+pipette-ide .tab-dot { color: #8a5a00; width: 0.7rem; text-align: center; }
+pipette-ide .tab:not(.unsaved) .tab-dot { visibility: hidden; }
+pipette-ide .tab-close { background: none; border: 0; padding: 0.2rem 0.45rem 0.2rem 0.1rem; color: #999; cursor: pointer; font: inherit; }
+pipette-ide .tab-close:hover, pipette-ide .tab-close:focus-visible { color: #b3261e; }
+pipette-ide #new-tab { background: none; border: 1px dashed #bbb; border-bottom: 0; border-radius: 6px 6px 0 0; padding: 0.15rem 0.55rem;
+  color: #777; cursor: pointer; font-size: 0.95rem; position: relative; top: 1px; }
+pipette-ide #new-tab:hover, pipette-ide #new-tab:focus-visible { color: #111; border-color: #888; }
+pipette-ide #import-warning { margin: 0.4rem 0 0; padding: 0.35rem 0.6rem; background: #fff6dc; border-left: 3px solid #c98a00; color: #5c4400; font-size: 0.9rem; }
+pipette-ide #import-warning[hidden] { display: none; }
 pipette-ide .workspace { display: grid; grid-template-columns: 15rem 1fr; gap: 1rem; align-items: start; }
 pipette-ide #files { border: 1px solid #ccc; font-size: 0.9rem; }
 pipette-ide #files.busy { opacity: 0.5; pointer-events: none; }
@@ -139,7 +158,10 @@ const MARKUP = `
     </form>
   </section>
 
-  <div id="code"></div>
+  <div id="code">
+    <div class="tab-bar" id="tabs" role="tablist" aria-label="Open files"></div>
+    <p id="import-warning" role="status" hidden></p>
+  </div>
 </div>
 
 <h2>Output</h2>
@@ -175,22 +197,110 @@ function addStyles() {
   document.head.prepend(style);
 }
 
-// Wires up the editor's parts inside el, starting with the code starter; returns the code editor.
+// Wires up the editor's parts inside el, starting with the code starter; returns { value } for the tab showing.
 function setUp(el, starter) {
   const $ = id => el.querySelector(`#${id}`);
-  // The editor component: its textarea has id "editor" (demo scripts use it); "Line n: ..." goes above the errors
-  const code = createEditor({ value: starter, rows: 14, id: 'editor' });
-  $('code').append(code.element);
-  $('where-goes-here').replaceWith(code.where);
-  const editor = code.textarea;
   const connection = el.connection;
   let link = null;           // connection.link, kept here for the many places that use it
   let busy = false;          // false, 'running' (a program) or 'files' (a file operation)
   let picoDir = '/';         // folder shown in the Pico files panel
-  let localHandle = null;    // where "Save to computer" writes, once known (Chrome and Edge)
-  let unsaved = false;
 
-  editor.addEventListener('input', () => setUnsaved(true));   // typing, pasting or Tab
+  // --- tabs: one editor component per open file, only the active one showing. Its textarea has id "editor"
+  // (demo scripts use it) and its "Line n: ..." goes above the errors.
+  const tabs = new Tabs({ name: 'blink.py' });
+  const editors = new Map();                     // tab id -> its editor
+  const whereBox = document.createElement('div');
+  $('where-goes-here').replaceWith(whereBox);
+  const current = () => editors.get(tabs.active.id);
+
+  function addEditor(tab, text) {
+    const editor = createEditor({ value: text, rows: 14 });
+    editor.textarea.addEventListener('input', () => { tabs.edited(tab.id); drawTabs(); });   // typing, pasting or Tab
+    $('import-warning').before(editor.element);
+    editors.set(tab.id, editor);
+    return editor;
+  }
+
+  // Show the active tab's editor (and only that), with its name in the filename box
+  function show() {
+    for (const [id, editor] of editors) {
+      const active = id === tabs.active.id;
+      editor.element.hidden = !active;
+      editor.element.style.display = active ? '' : 'none';
+      if (active) editor.textarea.id = 'editor';
+      else editor.textarea.removeAttribute('id');
+    }
+    whereBox.replaceChildren(current().where);
+    $('filename').value = tabs.active.name;
+    drawTabs();
+    current().refresh();   // line numbers and colours line up now it's visible
+  }
+
+  function describe(tab) {
+    if (tab.source.kind === 'pico') return `${tab.source.path} on the Pico`;
+    if (tab.source.kind === 'local') return `${tab.name} on your computer`;
+    return tab.picoPath ? `${tab.picoPath} on the Pico` : 'New file, not saved yet';
+  }
+
+  function drawTabs() {
+    const bar = $('tabs');
+    bar.replaceChildren();
+    for (const tab of tabs.list) {
+      const item = document.createElement('div');
+      item.className = `tab${tab === tabs.active ? ' active' : ''}${tab.unsaved ? ' unsaved' : ''}`;
+      const name = document.createElement('button');
+      Object.assign(name, { type: 'button', className: 'tab-name', textContent: tab.name, title: describe(tab) });
+      name.setAttribute('role', 'tab');
+      name.setAttribute('aria-selected', String(tab === tabs.active));
+      name.onclick = () => switchTo(tab.id);
+      const dot = document.createElement('span');
+      Object.assign(dot, { className: 'tab-dot', textContent: '●', title: 'Unsaved changes' });
+      const close = document.createElement('button');
+      Object.assign(close, { type: 'button', className: 'tab-close', textContent: '×', title: `Close ${tab.name}` });
+      close.setAttribute('aria-label', `Close ${tab.name}`);
+      close.onclick = () => closeTab(tab.id);
+      item.append(name, dot, close);
+      bar.append(item);
+    }
+    const plus = document.createElement('button');
+    Object.assign(plus, { type: 'button', id: 'new-tab', textContent: '+', title: 'New file' });
+    plus.setAttribute('aria-label', 'New file');
+    plus.onclick = newTab;
+    bar.append(plus);
+    $('unsaved').textContent = tabs.active.unsaved ? '● unsaved changes' : '';
+  }
+
+  function switchTo(id) {
+    tabs.activate(id);
+    show();
+  }
+
+  function newTab() {
+    addEditor(tabs.newTab(), '');
+    show();
+    $('filename').select();     // ready to give it a name
+  }
+
+  function closeTab(id) {
+    const tab = tabs.get(id);
+    if (tab.unsaved && !confirm(`${tab.name} has unsaved changes. Close it anyway?`)) return;
+    const { replacement } = tabs.close(id);
+    editors.get(id).element.remove();
+    editors.delete(id);
+    if (replacement) addEditor(replacement, '');
+    show();
+  }
+
+  // Opens a file in a new tab, or switches to its tab if it's open already
+  function openInTab({ name, text, source, onPico = false }) {
+    const opened = tabs.open({ name, source, onPico });
+    if (!opened.existing) addEditor(opened.tab, text);
+    show();
+    return opened;
+  }
+
+  addEditor(tabs.active, starter);
+  show();
 
   // --- buttons follow the connection and whatever is in progress
   function refresh(status) {
@@ -206,28 +316,17 @@ function setUp(el, starter) {
     $('files').classList.toggle('busy', !!busy);
   }
 
-  function setUnsaved(value) {
-    unsaved = value;
-    $('unsaved').textContent = unsaved ? '● unsaved changes' : '';
-  }
-
-  function okToReplaceEditor() {
-    return !unsaved || confirm('Your changes in the editor have not been saved. Replace them anyway?');
-  }
-
   function fileName() {
     const name = $('filename').value.trim();
     if (!name) { refresh('Type a file name first'); $('filename').focus(); }
     return name;
   }
 
-  function loadIntoEditor(name, text) {
-    $('filename').value = name;
-    code.value = text;   // also clears any error mark
-    setUnsaved(false);
-  }
-
-  $('filename').addEventListener('input', () => { localHandle = null; });
+  // A new name in the filename box renames the tab (and makes it a new file, rather than the one it came from)
+  $('filename').addEventListener('input', () => {
+    tabs.rename(tabs.active.id, $('filename').value.trim());
+    drawTabs();
+  });
 
   // Runs a file operation on the Pico, keeping other buttons out of the way meanwhile
   async function fileTask(message, action) {
@@ -279,13 +378,11 @@ function setUp(el, starter) {
 
   // --- files on the computer
   $('open').onclick = async () => {
-    if (!okToReplaceEditor()) return;
     try {
       const file = await openLocalFile();
       if (!file) return;
-      loadIntoEditor(file.name, file.text);
-      localHandle = file.handle;
-      refresh(`Opened ${file.name} from your computer`);
+      const { existing } = openInTab({ name: file.name, text: file.text, source: { kind: 'local', handle: file.handle } });
+      refresh(existing ? `${file.name} is open already` : `Opened ${file.name} from your computer`);
     } catch (e) {
       refresh(`Could not open the file: ${e.message}`);
     }
@@ -294,12 +391,13 @@ function setUp(el, starter) {
   $('save-local').onclick = async () => {
     const name = fileName();
     if (!name) return;
+    const tab = tabs.active;
     try {
-      const handle = await saveLocalFile(name, editor.value, localHandle);
+      const handle = await saveLocalFile(name, current().value, tab.source.kind === 'local' ? tab.source.handle : null);
       if (handle === undefined) return;            // cancelled
-      localHandle = handle;
-      if (handle?.name) $('filename').value = handle.name;
-      setUnsaved(false);
+      tabs.savedLocally(tab.id, { kind: 'local', handle });
+      if (handle?.name) tab.name = handle.name;
+      show();
       refresh(handle ? `Saved ${handle.name} on your computer` : `Downloaded ${name}`);
     } catch (e) {
       refresh(`Could not save the file: ${e.message}`);
@@ -351,20 +449,26 @@ function setUp(el, starter) {
   const openFolder = dir => fileTask('Reading the Pico\'s files…', async () => { await showPicoFolder(dir); return `Showing ${dir}`; });
 
   async function openFromPico(path, name) {
-    if (!okToReplaceEditor()) return;
+    const open = tabs.list.find(tab => tab.source.kind === 'pico' && tab.source.path === path);
+    if (open) {
+      switchTo(open.id);
+      refresh(`${path} is open already`);
+      return;
+    }
     await fileTask(`Opening ${path}…`, async () => {
-      loadIntoEditor(name, await readFile(link, path));
-      localHandle = null;
+      openInTab({ name, text: await readFile(link, path), source: { kind: 'pico', path }, onPico: true });
       return `Opened ${path} from the Pico`;
     });
   }
 
   async function saveToPico(path, done) {
+    const tab = tabs.active;
     await fileTask(`Saving ${path} to the Pico…`, async () => {
-      await writeFile(link, path, editor.value, {
+      await writeFile(link, path, editors.get(tab.id).value, {
         onProgress: p => { if (p < 1) refresh(`Saving ${path} to the Pico… ${Math.round(p * 100)}%`); },
       });
-      setUnsaved(false);
+      tabs.savedToPico(tab.id, path);
+      show();
       await showPicoFolder(picoDir);
       return done;
     });
@@ -453,23 +557,51 @@ function setUp(el, starter) {
     }
   }
 
+  // Warn if the program imports open tabs whose changes aren't on the Pico: the Pico imports its own copies
+  function warnAboutImports(code) {
+    const stale = tabs.staleImports(code);
+    const warning = $('import-warning');
+    warning.hidden = !stale.length;
+    if (!stale.length) return;
+    const names = stale.map(tab => tab.name).join(', ').replace(/, ([^,]*)$/, ' and $1');
+    const one = stale.length === 1;
+    warning.textContent = `${names} ${one ? 'has' : 'have'} changes that are not on the Pico. Your program imports the `
+      + `${one ? 'copy' : 'copies'} on the Pico, if there ${one ? 'is one' : 'are any'}: to use your changes, `
+      + `save ${one ? 'it' : 'them'} to the Pico first.`;
+  }
+
+  // Mark where the error happened: in the tab that ran, or in another open file that the traceback points into
+  function markRunError(stderr, ran) {
+    const frame = innermostFrame(stderr);
+    const other = frame && frame.file !== '<stdin>' ? tabs.fileTab(frame.file) : null;
+    if (other && editors.has(other.id) && other !== ran) {
+      switchTo(other.id);
+      editors.get(other.id).markLine(frame.line, `${stderr.trim().split('\n').at(-1).trim()} (in ${other.name})`);
+    } else {
+      editors.get(ran.id)?.markError(stderr);
+    }
+  }
+
   $('run').onclick = async () => {
+    const ran = tabs.active;
+    const program = current().value;
     busy = 'running';
     refresh('Running…');
     $('stdout').textContent = $('stderr').textContent = '';
     $('variables').innerHTML = '';
-    code.clearError();
+    for (const editor of editors.values()) editor.clearError();
+    warnAboutImports(program);
     $('stdout').after($('stdin-row'));             // typing for input() goes under the program's output
     setTimeout(() => $('stdin').focus());        // ready for the program's input()
-    const show = ({ stdout, stderr }) => {
+    const showOutput = ({ stdout, stderr }) => {   // the output so far
       $('stdout').textContent = stdout;
       $('stdout').scrollTop = $('stdout').scrollHeight;   // follow the newest output
       $('stderr').textContent = stderr;
     };
     try {
-      const result = await link.run(editor.value, { onOutput: show });
-      show(result);
-      code.markError(result.stderr);
+      const result = await link.run(program, { onOutput: showOutput });
+      showOutput(result);
+      markRunError(result.stderr, ran);
       if (!connection.connected) return;           // disconnected while it ran: nothing more to read
       busy = 'files';
       refresh('Reading variables…');
@@ -587,7 +719,11 @@ function setUp(el, starter) {
   replInput.addEventListener('input', fitReplInput);
   $('repl-clear').onclick = () => { replLog.textContent = ''; replInput.focus(); };
 
-  return code;
+  return {
+    get value() { return current().value; },
+    set value(code) { current().value = code; },
+    tabs,
+  };
 }
 
 export class PipetteIde extends HTMLElement {

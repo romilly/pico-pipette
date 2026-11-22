@@ -6,6 +6,13 @@ export function errorLine(stderr) {
   return matches.length ? Number(matches.at(-1)[1]) : null;
 }
 
+// Where the error actually happened: { file, line } for the innermost traceback entry in any file
+// ("<stdin>" for the learner's program, or a module such as "/lib/helpers.py"), or null.
+export function innermostFrame(stderr) {
+  const m = [...stderr.matchAll(/File "([^"]+)", line (\d+)/g)].at(-1);
+  return m ? { file: m[1], line: Number(m[2]) } : null;
+}
+
 // [start, end] character offsets of line n (counting from 1), or null if there is no such line.
 export function lineRange(text, n) {
   const lines = text.split('\n');

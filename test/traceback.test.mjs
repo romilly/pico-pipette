@@ -1,7 +1,7 @@
 // Run with: node --test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { errorLine, lineRange } from '../src/traceback.js';
+import { errorLine, lineRange, innermostFrame } from '../src/traceback.js';
 
 test('finds the line of a simple error', () => {
   const stderr =
@@ -52,4 +52,15 @@ test('lineRange gives the start and end of a line, counting from 1', () => {
 test('lineRange returns null for a line that does not exist', () => {
   assert.equal(lineRange('one\ntwo', 3), null);
   assert.equal(lineRange('one\ntwo', 0), null);
+});
+
+test('innermostFrame gives the file and line where the error actually happened, in any file', () => {
+  const stderr =
+    'Traceback (most recent call last):\r\n' +
+    '  File "<stdin>", line 4, in <module>\r\n' +
+    '  File "/lib/helpers.py", line 12, in flash\r\n' +
+    'ValueError: bad pin\r\n';
+  assert.deepEqual(innermostFrame(stderr), { file: '/lib/helpers.py', line: 12 });
+  assert.deepEqual(innermostFrame('  File "<stdin>", line 2\r\nSyntaxError: invalid syntax\r\n'), { file: '<stdin>', line: 2 });
+  assert.equal(innermostFrame('no traceback here'), null);
 });

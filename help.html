@@ -33,6 +33,7 @@
     <li><a href="#repl">The REPL</a></li>
     <li><a href="#variables">Variables</a></li>
     <li><a href="#files">Files</a></li>
+    <li><a href="#tabs">Tabs</a></li>
     <li><a href="#packages">Packages</a></li>
     <li><a href="#trouble">Troubleshooting</a></li>
     <li><a href="#privacy">Privacy</a></li>
@@ -119,19 +120,32 @@ with their types and values. After pressing Stop in a loop, for example, you can
 
 <h2 id="files">Files</h2>
 <h3>On your computer</h3>
-<p><b>Open…</b> loads a file into the editor. <b>Save to computer</b> saves the editor using the name in the box beside it.
+<p><b>Open…</b> opens a file in a new tab. <b>Save to computer</b> saves the tab showing, using the name in the box beside it.
 In Chrome and Edge it saves back to the file you opened; in other browsers it downloads a copy.</p>
 
 <h3>On the Pico</h3>
 <ul>
-  <li>Click a file in the <b>Pico files</b> panel to open it in the editor. Click a folder to go into it, and <b>..</b> to come back.</li>
-  <li><b>Save to Pico</b> saves the editor into the folder shown, using the name in the box.</li>
+  <li>Click a file in the <b>Pico files</b> panel to open it in a new tab (or go to its tab, if it's open already).
+    Click a folder to go into it, and <b>..</b> to come back.</li>
+  <li><b>Save to Pico</b> saves the tab showing into the folder shown, using the name in the box.</li>
   <li><b>Save as main.py</b> saves it as <code>/main.py</code>. The Pico runs <code>main.py</code> whenever it powers up,
     so your program will run on its own, even from a phone charger or battery. Connecting with Pipette stops it again.</li>
   <li><b>✕</b> (shown when you point at a file) deletes it, after asking. This can't be undone. Folders must be empty before they can be deleted.</li>
   <li><b>New folder</b> creates a folder, and <b>↻</b> refreshes the list.</li>
 </ul>
-<p>Pipette marks <b>unsaved changes</b> and asks before replacing them.</p>
+<h2 id="tabs">Tabs</h2>
+<p>Each open file has its own tab above the editor, so you can look at several files and switch between them.
+Each tab keeps its own code, undo history and error marks.</p>
+<ul>
+  <li>Click a tab to show it. <b>+</b> starts a new, empty file: type its name in the box beside <b>Open…</b>.</li>
+  <li>A <b>●</b> on a tab means it has changes that aren't saved. <b>×</b> closes a tab, asking first if its changes aren't saved.</li>
+  <li>The name box, <b>Save to computer</b>, <b>Save to Pico</b>, <b>Save as main.py</b> and <b>Run</b> all work on the tab showing.</li>
+</ul>
+<h3>Programs in more than one file</h3>
+<p>If <code>main.py</code> says <code>import helpers</code>, the Pico runs the <code>helpers.py</code> that's saved on the Pico,
+not what's in its tab. So when you change <code>helpers.py</code>, use <b>Save to Pico</b> on its tab before you run <code>main.py</code>.
+If you forget, Pipette reminds you when you click <b>Run</b>.</p>
+<p>If an error happens inside a file that's open in another tab, Pipette switches to that tab and marks the line.</p>
 
 <h2 id="packages">Packages</h2>
 <p>Packages add extra modules, such as drivers for displays and sensors. Type a name in <b>Install a package</b> and click <b>Install</b>:</p>

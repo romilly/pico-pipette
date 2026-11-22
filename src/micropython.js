@@ -8,7 +8,11 @@
 // Pass in loadMicroPython from @micropython/micropython-webassembly-pyscript
 // (in Node, import the package; in a browser, import its micropython.mjs by URL).
 
-const SOFT_RESET = `for _k in [k for k in globals() if k != '__name__']:
+// Like a soft reset on a Pico: forget the program's variables and the modules it imported
+const SOFT_RESET = `import sys
+for _m in [m for m in sys.modules if m != 'sys']:
+    del sys.modules[_m]
+for _k in [k for k in globals() if k != '__name__']:
     del globals()[_k]`;
 
 export async function createMicroPythonLink(loadMicroPython, options = {}) {

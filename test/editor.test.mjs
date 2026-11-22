@@ -91,6 +91,16 @@ test('output without a traceback in the learner\'s code marks nothing', async (t
   assert.equal(await page.$eval('.pipette-where', (w) => w.textContent), '');
 });
 
+test('markLine marks a given line and says what went wrong there', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: CODE });
+  assert.equal(await page.evaluate(() => window.editor.markLine(2, 'ValueError: bad pin')), 2);
+  assert.equal(await page.$eval('.pipette-gutter .error', (e) => e.textContent), '2');
+  assert.equal(await page.$eval('.pipette-where', (e) => e.textContent), 'Line 2: ValueError: bad pin');
+  assert.equal(await page.evaluate(() => window.editor.markLine(99, 'gone')), null);   // no such line: nothing marked
+  assert.equal(await page.$$eval('.pipette-gutter .error', (es) => es.length), 0);
+});
+
 test('typing clears the error mark', async (t) => {
   if (skip) return t.skip(skip);
   await fresh({ value: CODE });

@@ -10,7 +10,9 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 
 - **Connect and disconnect**: a dot shows whether you're connected, and **Disconnect** releases the Pico's USB
   connection so other programs (Thonny, another tab) can use it.
-- **Write code** in an editor with Python syntax colouring and line numbers.
+- **Write code** in an editor with Python syntax colouring and line numbers, with a **tab for each open file**.
+  Pipette reminds you when a module your program imports has changes that aren't on the Pico yet, and an error
+  inside another open file takes you to its tab.
 - **Run code on the Pico** and see its output as it arrives. **Stop** a program that's still running.
   Programs can use `input()`: type to them in the box that appears while they run.
 - **Find errors fast.** When a program fails, the line that caused it is highlighted in the editor,
@@ -160,6 +162,7 @@ src/
   dedent.js       tidies the code written inside an element
   editor.js       the code editor component (line numbers, colours, error line), used by the pages
   traceback.js    finds the failing line in a MicroPython traceback
+  tabs.js         the editor's tabs: open files, unsaved changes, which imported modules aren't on the Pico
   highlight.js    colours Python code for the editor
   inspector.js    lists the global variables a program left behind
   repl.js         the interactive REPL: runs what's typed, decides when a block is complete, keeps history

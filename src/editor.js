@@ -6,6 +6,8 @@
 //   page.append(editor.element, editor.where);   // where: "Line 3: NameError: ..." after a failed run
 //   editor.value                                  // get or set the code
 //   editor.markError(stderr)                      // mark the traceback's line; returns its number or null
+//   editor.markLine(n, message)                   // mark line n with a message (e.g. an error in this file
+//                                                 // found in another file's traceback); returns n or null
 //   editor.textarea                               // for your own listeners: 'input' fires on every edit
 
 import { errorLine, lineRange } from './traceback.js';
@@ -107,7 +109,11 @@ export function createEditor({ value = '', rows = 14, id } = {}) {
   }
 
   function markError(stderr) {
-    badLine = errorLine(stderr ?? '');
+    return markLine(errorLine(stderr ?? ''), (stderr ?? '').trim().split('\n').at(-1).trim());
+  }
+
+  function markLine(n, message) {
+    badLine = n && lineRange(textarea.value, n) ? n : null;
     where.replaceChildren();
     if (badLine) {
       const link = make('a');
@@ -115,7 +121,7 @@ export function createEditor({ value = '', rows = 14, id } = {}) {
       link.textContent = `Line ${badLine}`;
       const line = badLine;
       link.addEventListener('click', (e) => { e.preventDefault(); selectLine(line); });
-      where.append(link, `: ${stderr.trim().split('\n').at(-1).trim()}`);
+      where.append(link, `: ${message}`);
       selectLine(badLine);
     }
     draw();
@@ -139,7 +145,7 @@ export function createEditor({ value = '', rows = 14, id } = {}) {
     element, where, textarea,
     get value() { return textarea.value; },
     set value(text) { textarea.value = text; clearError(); },
-    markError, clearError, selectLine,
+    markError, markLine, clearError, selectLine,
     refresh: draw,   // after changing textarea.value directly
   };
 }
