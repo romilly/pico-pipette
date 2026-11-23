@@ -184,3 +184,78 @@ test('an error inside another open file switches to its tab and marks the line',
   assert.deepEqual(await page.$$eval('.pipette-editor:not([hidden]) .pipette-gutter .error', (els) => els.map((e) => e.textContent)), ['3']);
   assert.match(await page.$eval('.pipette-where', (e) => e.textContent), /^Line 3: ZeroDivisionError/);
 });
+
+// --- go to definition across files
+const selected = () => page.evaluate(() => {
+  const t = document.querySelector('#editor');
+  return { text: t.value.slice(t.selectionStart, t.selectionEnd), line: t.value.slice(0, t.selectionStart).split('\n').length };
+});
+async function ctrlClickWord(word, n = 1) {
+  const where = await page.evaluate(([word, n]) => {
+    const t = document.querySelector('#editor');
+    let i = -1;
+    for (let k = 0; k < n; k++) i = t.value.indexOf(word, i + 1);
+    const style = getComputedStyle(t);
+    const measure = document.createElement('canvas').getContext('2d');
+    measure.font = `${style.fontSize} ${style.fontFamily}`;
+    const before = t.value.slice(0, i).split('\n');
+    const box = t.getBoundingClientRect();
+    return {
+      x: box.left + parseFloat(style.paddingLeft) + (before.at(-1).length + 0.5) * measure.measureText('M').width,
+      y: box.top + parseFloat(style.paddingTop) + (before.length - 0.5) * parseFloat(style.lineHeight),
+    };
+  }, [word, n]);
+  await page.keyboard.down('Control');
+  await page.mouse.click(where.x, where.y);
+  await page.keyboard.up('Control');
+}
+const hintText = () => page.$eval('.pipette-editor:not([hidden]) .pipette-hint', (h) => (h.hidden ? null : h.textContent));
+
+test('Ctrl-click on a name from a module on the Pico opens the module in a tab, at the definition', async (t) => {
+  if (b.skip) return t.skip(b.skip);
+  await fresh('from helpers import double\nimport tools\nprint(double(2), tools.half(4))\n');
+  await page.click('#connect');
+  await ready();
+  await page.evaluate(() => window.el.connection.link.run("import os\nos.mkdir('/lib')"));
+  await picoFile('lib/helpers.py', '# helpers\n\ndef double(n):\n    return 2 * n\n');
+  await picoFile('tools.py', 'from helpers import double as twice\n\ndef half(n):\n    return n / 2\n');
+  await ctrlClickWord('double', 2);
+  await page.waitForFunction(() => document.querySelector('#tabs .tab.active .tab-name').textContent === 'helpers.py');
+  assert.deepEqual(await selected(), { text: 'double', line: 3 });
+  assert.match(await text('#status'), /Opened \/lib\/helpers\.py/);
+  await page.click('#tabs .tab-name >> text=blink.py');
+  await ctrlClickWord('half');
+  await page.waitForFunction(() => document.querySelector('#tabs .tab.active .tab-name').textContent === 'tools.py');
+  assert.deepEqual(await selected(), { text: 'half', line: 3 });
+  await ctrlClickWord('twice');
+  await page.waitForFunction(() => document.querySelector('#tabs .tab.active .tab-name').textContent === 'helpers.py');
+  assert.deepEqual(await selected(), { text: 'double', line: 3 }, 'a name the module imports is followed on');
+  assert.deepEqual(await tabNames(), ['blink.py', 'helpers.py', 'tools.py'], 'helpers.py was not opened twice');
+});
+
+test('an open tab is used without the Pico; built-in modules and missing names say so', async (t) => {
+  if (b.skip) return t.skip(b.skip);
+  await fresh('import helpers\nimport machine\nhelpers.double(2)\nhelpers.nothing()\nmachine.Pin(25)\nimport gone\ngone.f()\n');
+  await page.click('#new-tab');
+  await page.fill('#filename', 'helpers.py');
+  await page.fill('#editor', 'def double(n):\n    return 2 * n\n');
+  await page.click('#tabs .tab-name >> text=blink.py');
+  await ctrlClickWord('double');
+  await page.waitForFunction(() => document.querySelector('#tabs .tab.active .tab-name').textContent === 'helpers.py');
+  assert.deepEqual(await selected(), { text: 'double', line: 1 });
+  await page.click('#tabs .tab-name >> text=blink.py');
+  await ctrlClickWord('nothing');
+  await page.waitForFunction(() => /nothing/.test(document.querySelector('#status').textContent));
+  assert.match(await text('#status'), /Couldn't find nothing in helpers\.py/);
+  await page.click('#tabs .tab-name >> text=blink.py');
+  await ctrlClickWord('Pin');
+  await page.waitForFunction(() => !!document.querySelector('.pipette-editor:not([hidden]) .pipette-hint:not([hidden])'));
+  assert.match(await hintText(), /machine is built into MicroPython/);
+  await ctrlClickWord('f()');
+  await page.waitForFunction(() => /connect to the Pico/.test(document.querySelector('.pipette-editor:not([hidden]) .pipette-hint').textContent));
+  assert.match(await hintText(), /gone isn't open in a tab: connect to the Pico to look for it there/);
+  await page.click('#connect');
+  await ready();
+  await ctrlClickWord('f()');
+  await page.waitForFunction(() => /isn't on the Pico/.test(document.querySelector('#status').textContent));
+});

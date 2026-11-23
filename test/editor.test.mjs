@@ -154,3 +154,109 @@ test('Tab counts as an edit: it fires input, like typing', async (t) => {
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => window.edits), 1);
 });
+
+// --- go to definition
+const DEFS = 'def double(x):\n    return 2 * x\n\nprint(double(3), len("ab"))\nhelpers.triple(3)\nimport helpers\n';
+// Where the nth occurrence of word is on screen
+const spot = (word, n = 1) => page.evaluate(([word, n]) => {
+  const v = window.editor.value;
+  let i = -1;
+  for (let k = 0; k < n; k++) i = v.indexOf(word, i + 1);
+  return window.editor.pointAt(i);
+}, [word, n]);
+const caretLine = () => page.evaluate(() => {
+  const t = window.editor.textarea;
+  return t.value.slice(0, t.selectionStart).split('\n').length;
+});
+const hint = () => page.$eval('.pipette-hint', (h) => (h.hidden ? null : h.textContent));
+async function ctrlClick(where, key = 'Control') {
+  await page.keyboard.down(key);
+  await page.mouse.click(where.x, where.y);
+  await page.keyboard.up(key);
+}
+
+test('Ctrl-click on a name selects its definition', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  await ctrlClick(await spot('double', 2));
+  await page.waitForFunction(() => window.editor.textarea.selectionEnd > window.editor.textarea.selectionStart);
+  assert.equal(await selection(), 'double');
+  assert.equal(await caretLine(), 1);
+});
+
+test('Cmd-click (on a Mac) does the same', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  await ctrlClick(await spot('x', 2), 'Meta');
+  await page.waitForFunction(() => window.editor.textarea.selectionEnd > window.editor.textarea.selectionStart);
+  assert.equal(await selection(), 'x');
+  assert.equal(await caretLine(), 1);
+});
+
+test('an ordinary click just places the caret', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  const where = await spot('double', 2);
+  await page.mouse.click(where.x, where.y);
+  assert.equal(await selection(), '');
+  assert.equal(await caretLine(), 4);
+});
+
+test('F12 goes to the definition of the name at the caret', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  const where = await spot('double', 2);
+  await page.mouse.click(where.x, where.y);
+  await page.keyboard.press('F12');
+  await page.waitForFunction(() => window.editor.textarea.selectionEnd > window.editor.textarea.selectionStart);
+  assert.equal(await caretLine(), 1);
+});
+
+test('resting the pointer on a name shows where it is defined; moving away hides it', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  const where = await spot('double', 2);
+  await page.mouse.move(where.x, where.y);
+  await page.waitForFunction(() => !document.querySelector('.pipette-hint').hidden);
+  assert.match(await hint(), /double: defined on line 1/);
+  assert.match(await hint(), /click to go there/);
+  await page.mouse.move(where.x, where.y + 200);
+  await page.waitForFunction(() => document.querySelector('.pipette-hint').hidden);
+});
+
+test('Ctrl-click on a built-in name says so', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  await ctrlClick(await spot('len'));
+  await page.waitForFunction(() => !document.querySelector('.pipette-hint').hidden);
+  assert.match(await hint(), /len is built into MicroPython/);
+});
+
+test('a name from another file goes to editor.openModule, which may answer with a message', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: DEFS });
+  await ctrlClick(await spot('triple'));
+  await page.waitForFunction(() => !document.querySelector('.pipette-hint').hidden);
+  assert.match(await hint(), /triple comes from helpers/, 'with nothing to open it, it says where it comes from');
+  await page.evaluate(() => {
+    window.asked = [];
+    window.editor.openModule = async (found) => { window.asked.push(found); return 'Connect to look on the Pico'; };
+  });
+  await ctrlClick(await spot('triple'));
+  await page.waitForFunction(() => document.querySelector('.pipette-hint').textContent === 'Connect to look on the Pico');
+  assert.deepEqual(await page.evaluate(() => window.asked), [{ module: 'helpers', name: 'triple', line: 6 }]);
+});
+
+test('goTo selects a definition and scrolls it into view', async (t) => {
+  if (skip) return t.skip(skip);
+  await fresh({ value: 'x = 1\n'.repeat(200) + 'def far():\n    pass\n', rows: 10 });
+  await page.evaluate(() => window.editor.goTo({ line: 201, column: 5, length: 3 }));
+  assert.equal(await selection(), 'far');
+  const visible = await page.evaluate(() => {
+    const t = window.editor.textarea;
+    const lineHeight = parseFloat(getComputedStyle(t).lineHeight);
+    const top = 200 * lineHeight;
+    return top >= t.scrollTop && top < t.scrollTop + t.clientHeight;
+  });
+  assert.equal(visible, true);
+});

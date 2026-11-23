@@ -4,7 +4,7 @@
 const KEYWORDS = new Set(('and as assert async await break class continue def del elif else except finally for from ' +
   'global if import in is lambda nonlocal not or pass raise return try while with yield').split(' '));
 const CONSTANTS = new Set(['True', 'False', 'None']);
-const BUILTINS = new Set(('abs all any bin bool bytearray bytes callable chr dict dir divmod enumerate eval exec ' +
+export const BUILTINS = new Set(('abs all any bin bool bytearray bytes callable chr dict dir divmod enumerate eval exec ' +
   'filter float format getattr globals hasattr hash hex id input int isinstance issubclass iter len list locals map ' +
   'max min next object oct open ord pow print property range repr reversed round set setattr slice sorted ' +
   'staticmethod str sum super tuple type zip self Exception KeyboardInterrupt OSError ValueError TypeError ' +

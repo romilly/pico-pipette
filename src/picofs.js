@@ -120,3 +120,19 @@ def _mkdirs(p):
 _mkdirs(${q(path)})
 del _mkdirs`);
 }
+
+// The first of the paths that is a file (not a folder), or null if none is
+export async function firstFile(link, paths) {
+  const stdout = await exec(link, `import os
+def _first(ps):
+    for p in ps:
+        try:
+            if not os.stat(p)[0] & 0x4000:
+                return p
+        except OSError:
+            pass
+    return ''
+print(_first(${q(paths)}))
+del _first`);
+  return stdout.trim() || null;
+}

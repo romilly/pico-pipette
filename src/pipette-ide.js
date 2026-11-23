@@ -23,7 +23,8 @@ import { innermostFrame } from './traceback.js';
 import { highlight } from './highlight.js';
 import { inspectGlobals } from './inspector.js';
 import { evaluate, needsMore, History } from './repl.js';
-import { listDir, readFile, writeFile, remove, makeDir, joinPath } from './picofs.js';
+import { listDir, readFile, writeFile, remove, makeDir, joinPath, firstFile } from './picofs.js';
+import { findInModule, modulePaths } from './definitions.js';
 import { installPackage } from './packages.js';
 import { openLocalFile, saveLocalFile } from './localfiles.js';
 import { dedent } from './dedent.js';
@@ -198,6 +199,12 @@ function addStyles() {
 }
 
 // Wires up the editor's parts inside el, starting with the code starter; returns { value } for the tab showing.
+// Modules MicroPython has built in: no file to open for these
+const BUILT_IN_MODULES = new Set(('array asyncio binascii bluetooth builtins cmath collections cryptolib deflate errno '
+  + 'framebuf gc hashlib heapq io json machine math micropython network neopixel os platform random re rp2 select '
+  + 'socket ssl struct sys time uasyncio ubinascii ucollections uctypes uerrno uhashlib uheapq uio ujson umachine '
+  + 'uos urandom ure uselect usocket ussl ustruct usys utime uzlib vfs zlib').split(' '));
+
 function setUp(el, starter) {
   const $ = id => el.querySelector(`#${id}`);
   const connection = el.connection;
@@ -215,6 +222,7 @@ function setUp(el, starter) {
 
   function addEditor(tab, text) {
     const editor = createEditor({ value: text, rows: 14 });
+    editor.openModule = (found) => openDefinition(found, tab);
     editor.textarea.addEventListener('input', () => { tabs.edited(tab.id); drawTabs(); });   // typing, pasting or Tab
     $('import-warning').before(editor.element);
     editors.set(tab.id, editor);
@@ -301,6 +309,40 @@ function setUp(el, starter) {
 
   addEditor(tabs.active, starter);
   show();
+
+  // --- go to definition in another file: the module's open tab, or failing that its file on the Pico.
+  // Returns a message for the editor to show by the name, if it couldn't get there.
+  async function openDefinition({ module, name }, from, hops = 0) {
+    const top = module.split('.')[0];
+    if (BUILT_IN_MODULES.has(top)) return `\`${top}\` is built into MicroPython, so there's no Python file to show`;
+    const paths = modulePaths(module, from.picoPath ?? '/main.py');
+    let tab = tabs.moduleTab(paths, from);
+    let message = null;
+    if (!tab) {
+      if (!link) return `\`${module}\` isn't open in a tab: connect to the Pico to look for it there`;
+      if (busy) return `Wait for the Pico to finish, then try again`;
+      await fileTask(`Looking for ${module} on the Pico…`, async () => {
+        const path = await firstFile(link, paths);
+        if (!path) {
+          const compiled = await firstFile(link, paths.filter(p => !p.endsWith('/__init__.py')).map(p => p.replace(/\.py$/, '.mpy')));
+          message = compiled ? `${module} is compiled (${compiled}), so there's no source to show`
+            : `${module} isn't on the Pico: it may be built into MicroPython`;
+          return message;
+        }
+        tab = openInTab({ name: path.split('/').at(-1), text: await readFile(link, path), source: { kind: 'pico', path }, onPico: true }).tab;
+        return `Opened ${path} from the Pico`;
+      });
+      if (!tab) return message ?? `Couldn't open ${module}`;
+    }
+    switchTo(tab.id);
+    const editor = editors.get(tab.id);
+    if (!name) { editor.goTo({ line: 1 }); return null; }
+    const found = findInModule(editor.value, name);
+    if (found?.module && hops < 3) return openDefinition(found, tab, hops + 1);
+    if (found?.text) { editor.goTo(found); return null; }
+    refresh(`Couldn't find ${name} in ${tab.name}`);
+    return null;
+  }
 
   // --- buttons follow the connection and whatever is in progress
   function refresh(status) {

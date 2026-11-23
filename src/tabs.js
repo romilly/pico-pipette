@@ -102,6 +102,14 @@ export class Tabs {
 
   // The open tab holding a file named in a traceback, if any
   fileTab(file) { return this.list.find((tab) => sameFile(file, tab)); }
+
+  // The open tab holding a module, given the Pico paths it could be at (from modulePaths): the tab with one of
+  // those paths, or failing that a file not on the Pico with the module's file name (helpers.py)
+  moduleTab(paths, from) {
+    return this.list.find((tab) => tab.picoPath && paths.includes(tab.picoPath))
+      ?? this.list.find((tab) => tab !== from && !tab.picoPath
+        && paths.some((p) => !p.endsWith('/__init__.py') && p.split('/').at(-1) === tab.name));
+  }
 }
 
 function sameSource(a, b) {

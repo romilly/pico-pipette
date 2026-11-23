@@ -36,6 +36,12 @@ export const ACTIONS = {
     await demo.typeText(code, 30);
   },
   edit: (demo, { find, replace, in: within = find }) => demo.edit(find, replace, within),
+  definition: async (demo, target) => {
+    const { name, in: within = name } = typeof target === 'string' ? { name: target } : target;
+    await demo.ctrlClick(name, within);
+    await WAITS.idle(demo.page);     // it may open a file from the Pico
+    await demo.pause(0.8);
+  },
   rename: async (demo, name) => {
     await demo.clickOn('#filename', { x: 0.8 });
     await demo.page.keyboard.press('ControlOrMeta+A');
@@ -146,6 +152,18 @@ function helpers(page, pace) {
           fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
         Object.assign(pointer.style, { position: 'fixed', left: '0', top: '0', zIndex: 2000, pointerEvents: 'none',
           transform: 'translate(-3px, -2px)', filter: 'drop-shadow(1px 2px 2px rgba(0,0,0,0.35))' });
+        // a "Ctrl" badge by the pointer while Ctrl (or Cmd) is held, since viewers can't see the keyboard
+        const badge = document.createElement('div');
+        badge.id = 'demo-key';
+        Object.assign(badge.style, { position: 'absolute', left: '22px', top: '18px', display: 'none',
+          background: '#111', color: '#fff', font: '600 13px system-ui, sans-serif', padding: '2px 7px',
+          borderRadius: '5px', border: '1.5px solid #fff', whiteSpace: 'nowrap' });
+        pointer.append(badge);
+        const keys = { Control: 'Ctrl', Meta: 'Cmd' };
+        document.addEventListener('keydown', e => {
+          if (keys[e.key]) { badge.textContent = keys[e.key]; badge.style.display = 'block'; }
+        }, true);
+        document.addEventListener('keyup', e => { if (keys[e.key]) badge.style.display = 'none'; }, true);
         document.body.append(pointer);
         document.addEventListener('mousemove', e => {
           pointer.style.left = e.clientX + 'px';
@@ -177,8 +195,8 @@ function helpers(page, pace) {
       await page.mouse.up();
     },
 
-    // Point at `find` (the first one inside the first `within`) in the editor, select it, and type over it
-    async edit(find, replace, within) {
+    // Where `find` (the first one inside the first `within`) is in the editor: its offsets, and its middle on screen
+    async textSpot(find, within) {
       const spot = await page.evaluate(({ find, within }) => {
         const editor = document.getElementById('editor');
         const outer = editor.value.indexOf(within);
@@ -198,6 +216,12 @@ function helpers(page, pace) {
         };
       }, { find, within });
       if (spot.missing) throw new Error(`"${find}"${within === find ? '' : ` in "${within}"`} isn't in the editor`);
+      return spot;
+    },
+
+    // Point at some text in the editor, select it, and type over it
+    async edit(find, replace, within) {
+      const spot = await demo.textSpot(find, within);
       await page.mouse.move(spot.x, spot.y, { steps: Math.round(25 * pace) });
       await page.evaluate(({ start, end }) => {
         const editor = document.getElementById('editor');
@@ -206,6 +230,19 @@ function helpers(page, pace) {
       }, spot);
       await demo.pause(0.6);
       await demo.typeText(replace, 90);
+    },
+
+    // Point at a name in the editor, rest there long enough for its hint to show, then Ctrl-click it
+    async ctrlClick(find, within) {
+      const spot = await demo.textSpot(find, within);
+      await page.mouse.move(spot.x, spot.y, { steps: Math.round(25 * pace) });
+      await demo.pause(1.8);
+      await page.keyboard.down('Control');
+      await demo.pause(0.5);
+      await page.mouse.down();
+      await page.mouse.up();
+      await demo.pause(0.3);
+      await page.keyboard.up('Control');
     },
   };
   return demo;

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadMicroPython } from '@micropython/micropython-webassembly-pyscript';
 import { createMicroPythonLink } from '../src/micropython.js';
-import { listDir, readFile, readBytes, writeFile, remove, makeDir, makeDirs, joinPath } from '../src/picofs.js';
+import { listDir, readFile, readBytes, writeFile, remove, makeDir, makeDirs, joinPath, firstFile } from '../src/picofs.js';
 
 // The WebAssembly MicroPython adapter, counting runs. Each test gets a fresh MicroPython
 // and works in its own folder.
@@ -113,4 +113,17 @@ test('joinPath builds Pico paths', () => {
   assert.equal(joinPath('/', 'main.py'), '/main.py');
   assert.equal(joinPath('/lib', 'util.py'), '/lib/util.py');
   assert.equal(joinPath('/lib/', 'util.py'), '/lib/util.py');
+});
+
+test('firstFile finds the first of several paths that is a file, in one run', async () => {
+  const link = await micropython();
+  await makeDirs(link, '/work/lib/tools');
+  await writeFile(link, '/work/lib/helpers.py', 'x = 1\n');
+  await writeFile(link, '/work/lib/tools/__init__.py', '');
+  link.runs = 0;
+  assert.equal(await firstFile(link, ['/work/helpers.py', '/work/lib/helpers.py']), '/work/lib/helpers.py');
+  assert.equal(link.runs, 1);
+  assert.equal(await firstFile(link, ['/work/lib/tools', '/work/lib/tools/__init__.py']), '/work/lib/tools/__init__.py',
+    'a folder is not a file');
+  assert.equal(await firstFile(link, ['/work/nothing.py']), null);
 });

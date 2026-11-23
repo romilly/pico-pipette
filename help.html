@@ -34,6 +34,7 @@
     <li><a href="#variables">Variables</a></li>
     <li><a href="#files">Files</a></li>
     <li><a href="#tabs">Tabs</a></li>
+    <li><a href="#definitions">Finding where things are defined</a></li>
     <li><a href="#packages">Packages</a></li>
     <li><a href="#trouble">Troubleshooting</a></li>
     <li><a href="#privacy">Privacy</a></li>
@@ -146,6 +147,21 @@ Each tab keeps its own code, undo history and error marks.</p>
 not what's in its tab. So when you change <code>helpers.py</code>, use <b>Save to Pico</b> on its tab before you run <code>main.py</code>.
 If you forget, Pipette reminds you when you click <b>Run</b>.</p>
 <p>If an error happens inside a file that's open in another tab, Pipette switches to that tab and marks the line.</p>
+
+<h2 id="definitions">Finding where things are defined</h2>
+<p>Rest the pointer on a name, such as a function or variable, and Pipette tells you which line defines it.
+<b>Ctrl-click</b> the name (<b>Cmd-click</b> on a Mac), or put the cursor in it and press <b>F12</b>, to go there.</p>
+<ul>
+  <li>It follows your own code: functions, classes, variables, function parameters, loop variables and <code>self.</code> attributes.
+    Inside a function, its own variables come first, as they do when Python runs it.</li>
+  <li>If the name comes from another file, as <code>double</code> does after <code>from helpers import double</code>
+    or in <code>helpers.double(2)</code>, Pipette opens that file at the definition. It uses the file's tab if it's open,
+    or reads it from the Pico (from the main folder, then <code>/lib</code>), so connect first.</li>
+  <li>Some names have no Python file to show: things built into MicroPython, like <code>print</code> or <code>machine</code>,
+    and packages installed in compiled form (<code>.mpy</code> files). Pipette says so.</li>
+  <li>For something like <code>led.on()</code>, Pipette can't tell where <code>on</code> comes from without running the
+    program, because it depends on what <code>led</code> holds.</li>
+</ul>
 
 <h2 id="packages">Packages</h2>
 <p>Packages add extra modules, such as drivers for displays and sensors. Type a name in <b>Install a package</b> and click <b>Install</b>:</p>

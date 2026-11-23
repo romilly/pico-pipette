@@ -147,3 +147,18 @@ test('fileTab finds the open tab a traceback\'s file refers to', () => {
   assert.equal(tabs.fileTab('/lib/helpers.py'), helpers);
   assert.equal(tabs.fileTab('nothing.py'), undefined);
 });
+
+test('moduleTab finds the open tab holding a module: by its Pico path, or a new or local file with its name', () => {
+  const tabs = new Tabs({ name: 'main.py' });
+  const main = tabs.active;
+  const paths = ['/helpers.py', '/helpers/__init__.py', '/lib/helpers.py', '/lib/helpers/__init__.py'];
+  assert.equal(tabs.moduleTab(paths, main), undefined);
+  const local = tabs.open({ name: 'helpers.py', source: { kind: 'local', handle: {} } }).tab;
+  assert.equal(tabs.moduleTab(paths, main), local, 'a local file named helpers.py');
+  const onPico = tabs.open({ name: 'helpers.py', source: { kind: 'pico', path: '/lib/helpers.py' }, onPico: true }).tab;
+  assert.equal(tabs.moduleTab(paths, main), onPico, 'the copy on the Pico wins');
+  const elsewhere = tabs.open({ name: 'leds.py', source: { kind: 'pico', path: '/old/leds.py' }, onPico: true }).tab;
+  assert.equal(tabs.moduleTab(['/leds.py', '/lib/leds.py'], main), undefined, 'a file elsewhere on the Pico is not it');
+  assert.ok(elsewhere);
+  assert.equal(tabs.moduleTab(['/__init__.py'], main), undefined, '__init__.py is only found by its path');
+});

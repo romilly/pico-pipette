@@ -82,6 +82,19 @@
             "in": { "type": "string", "description": "Which occurrence: the first `find` inside the first occurrence of this text." }
           }
         },
+        "definition": {
+          "description": "Point at a name in the editor, wait for its hint, then Ctrl-click it to go to its definition (which may open another file).",
+          "oneOf": [
+            { "type": "string", "minLength": 1, "description": "The name: its first occurrence in the editor." },
+            {
+              "type": "object", "required": ["name"], "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string", "minLength": 1, "description": "The name to Ctrl-click." },
+                "in": { "type": "string", "description": "Which occurrence: the first `name` inside the first occurrence of this text." }
+              }
+            }
+          ]
+        },
         "run": {
           "description": "Click Run. Waits until the program finishes, unless given { wait: false }.",
           "oneOf": [

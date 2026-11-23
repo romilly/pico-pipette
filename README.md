@@ -13,6 +13,9 @@ which works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop com
 - **Write code** in an editor with Python syntax colouring and line numbers, with a **tab for each open file**.
   Pipette reminds you when a module your program imports has changes that aren't on the Pico yet, and an error
   inside another open file takes you to its tab.
+- **Go to definition.** Ctrl-click (Cmd-click on a Mac) a name, or press F12, to jump to where it's defined,
+  even in another file: Pipette opens the module from its tab or from the Pico. Resting the pointer on a name
+  says where it's defined. Handy for beginners finding their way around a program split into modules.
 - **Run code on the Pico** and see its output as it arrives. **Stop** a program that's still running.
   Programs can use `input()`: type to them in the box that appears while they run.
 - **Find errors fast.** When a program fails, the line that caused it is highlighted in the editor,
@@ -160,7 +163,8 @@ src/
   pico-pipette.js the <pico-pipette> element: editor, Connect/Run/Stop and output in one tag
   pipette-ide.js  the <pipette-ide> element: the whole editor in one tag (index.html is just this)
   dedent.js       tidies the code written inside an element
-  editor.js       the code editor component (line numbers, colours, error line), used by the pages
+  editor.js       the code editor component (line numbers, colours, error line, go to definition), used by the pages
+  definitions.js  finds where a name is defined: in the file, or in a module it imports
   traceback.js    finds the failing line in a MicroPython traceback
   tabs.js         the editor's tabs: open files, unsaved changes, which imported modules aren't on the Pico
   highlight.js    colours Python code for the editor

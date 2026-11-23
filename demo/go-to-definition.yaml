@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./demo.schema.json
+#
+# Go to definition: within a file, and into a module on the Pico.
+#   node demo/demo.mjs demo/go-to-definition.yaml
+# It saves helpers.py to the Pico.
+
+title: Go to definition
+
+steps:
+  - caption: First, a helpers module, saved on the Pico
+  - click: connect
+  - wait: connected
+  - rename: helpers.py
+  - type: |
+      # Small functions used by main.py
+
+      def double(n):
+          return n * 2
+  - click: save-pico
+  - wait: idle
+  - click: new-tab
+  - rename: main.py
+  - click: { selector: '#tabs .tab:has-text("helpers.py") .tab-close' }
+  - pause: 1
+
+  - caption: Now a program that uses it
+  - type: |
+      from helpers import double
+
+      def show(n):
+          total = double(n) + 1
+          print(n, total)
+
+      for i in range(3):
+          show(i)
+  - pause: 1
+
+  - caption: Rest the pointer on a name to see where it's defined; Ctrl-click to go there
+  - definition: { name: show, in: show(i) }
+  - pause: 2
+
+  - caption: A name from another file? Pipette opens that file from the Pico…
+  - definition: { name: double, in: double(n) }
+  - caption: …at the line where it's defined
+  - pause: 3
+
+  - caption: Back to main.py, and run it
+  - tab: main.py
+  - run:
+  - pause: 3
+  - caption: ""

@@ -19,6 +19,8 @@ Included demos:
 - `repl-and-input.yaml`: a program using `input()`, then the REPL exploring what it left behind.
 - `tabs.yaml`: a program split across two tabs, the warning when a module's changes aren't on the Pico,
   and an error in the module taking you to its tab. It saves `helpers.py` to the Pico.
+- `go-to-definition.yaml`: the hint on a name, Ctrl-click within a file, and Ctrl-click opening a module
+  from the Pico at the definition. It saves `helpers.py` to the Pico.
 
 ## Editing demos in VS Code
 
@@ -66,6 +68,7 @@ Each step has exactly one action.
 | `tab: helpers.py` | Clicks the tab of an open file, by its name. `click: new-tab` starts a new, empty tab. |
 | `rename: helpers.py` | Types a new name for the tab showing into the file name box. |
 | `edit: { find: led, replace: leed, in: led.toggle }` | Points at some text in the editor, selects it and types over it. `in` is optional: it picks which occurrence. |
+| `definition: { name: double, in: double(2) }` | Points at a name in the editor, rests there so its "defined on line N" hint shows, then Ctrl-clicks it to go to its definition, opening its file from the Pico if need be. A "Ctrl" badge by the pointer shows the key is held. `definition: double` uses the first `double`. |
 | `run:` | Clicks Run and waits for the program to finish. `run: { wait: false }` carries straight on, for example to `input` or `stop`. |
 | `stop:` | Clicks Stop and waits until the program has stopped. |
 | `input: Romilly` | Types a line to the running program's `input()`. |
