@@ -1,0 +1,13 @@
+/* Shared by help.html and the pages in help/ */
+body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 1.5rem auto 4rem; padding: 0 1rem; line-height: 1.6; color: #222; position: relative; }
+h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.2rem; }
+h3 { font-size: 1rem; margin: 1.2rem 0 0.2rem; }
+code { background: #f4f4f4; padding: 0 0.25rem; border-radius: 3px; font-size: 0.92em; }
+pre { background: #f4f4f4; padding: 0.6rem 0.8rem; overflow: auto; }
+.back { color: #555; }
+.pager { margin-top: 2.5rem; padding-top: 0.75rem; border-top: 1px solid #e5e5e5; color: #555; font-size: 0.95rem; }
+.topics { padding-left: 1.2rem; }
+.topics li { margin: 0.2rem 0; }
+.repo-link { position: absolute; top: 0.6rem; right: 1rem; line-height: 0; opacity: 0.45; transition: opacity 0.15s; }
+.repo-link:hover, .repo-link:focus-visible { opacity: 1; }

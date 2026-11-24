@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: Putting MicroPython on your board</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>Putting MicroPython on your board</h1>
+
+<p>Pipette needs MicroPython on your board. Boards built around the Pico's chip, such as Pimoroni's Explorer
+and Presto, usually come with it already. If yours does, you can skip this page.</p>
+
+<h2>Which MicroPython to use</h2>
+<ul>
+  <li><b>A Raspberry Pi Pico or Pico 2:</b> download the <code>.uf2</code> file for your model from
+    <a href="https://micropython.org/download/" target="_blank" rel="noopener">micropython.org</a>.
+    Each model (Pico, Pico W, Pico 2, Pico 2 W) has its own file.</li>
+  <li><b>Another board:</b> use the MicroPython its maker publishes, which includes drivers for its display,
+    buttons and so on. Pimoroni's are on the releases page of each board's GitHub repository.</li>
+</ul>
+
+<h2>Installing it</h2>
+<ol>
+  <li>Hold down the <b>BOOTSEL</b> button while you plug the board in. A drive called <code>RPI-RP2</code>
+    (or <code>RP2350</code> for boards with the newer chip) appears on your computer.</li>
+  <li>Copy the <code>.uf2</code> file onto that drive. The drive disappears and the board restarts, running MicroPython.</li>
+</ol>
+<p>This replaces the firmware the board was running before. Some makers publish two versions: one with their
+examples, which also replaces the files on the board, and one without.</p>
+
+<nav class="pager"><a href="../help.html">All help</a> · <a href="connecting.html">Connecting →</a></nav>
+</body>
+</html>

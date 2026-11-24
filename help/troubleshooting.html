@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: Troubleshooting</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>Troubleshooting</h1>
+
+<p>The <a href="../check.html">connection checker</a> tests each step and tells you what's wrong.</p>
+
+<h2>The list of ports is empty</h2>
+<ul>
+  <li>Another browser tab or program (such as Thonny) may be using the Pico. Close it, then unplug the Pico and plug it back in.</li>
+  <li>The cable may only carry power. Try another one.</li>
+  <li>The Pico may not have MicroPython on it, or may be in BOOTSEL mode (showing up as a drive). See <a href="micropython.html">Putting MicroPython on your board</a>.</li>
+</ul>
+
+<h2>The list doesn't include my board</h2>
+<p>Pipette lists only boards that identify themselves over USB as Raspberry Pi boards, which Picos running MicroPython do.
+A board built on the same chip may identify itself as its maker's instead, depending on its MicroPython,
+and then it won't appear. The <a href="../check.html">connection checker</a> uses the same list.</p>
+
+<h2>The Pico is listed but won't connect</h2>
+<ul>
+  <li>Close any other tab or program using it, then unplug it and plug it back in.</li>
+  <li>On Linux, your user may need permission to use serial ports. Run this, then log out and back in:
+    <pre>sudo usermod -aG dialout $USER</pre></li>
+</ul>
+
+<h2>Connected, but programs don't run</h2>
+<p>The board may be running something other than MicroPython. The connection checker will tell you; if so,
+<a href="micropython.html">put MicroPython on it</a>.</p>
+
+<h2>"Pico disconnected"</h2>
+<p>The Pico was unplugged or restarted. Plug it back in and click <b>Connect</b> again.</p>
+
+<nav class="pager"><a href="packages.html">← Packages</a> · <a href="../help.html">All help</a></nav>
+</body>
+</html>

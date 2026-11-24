@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: Packages</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>Packages</h1>
+
+<p>Packages add extra modules, such as drivers for displays and sensors. Type a name in <b>Install a package</b> and click <b>Install</b>:</p>
+<ul>
+  <li>a name from <a href="https://github.com/micropython/micropython-lib" target="_blank" rel="noopener">micropython-lib</a>, such as <code>ssd1306</code>;</li>
+  <li>a GitHub repository, such as <code>github:org/repo</code> (also <code>gitlab:</code> and <code>codeberg:</code>);</li>
+  <li>or the web address of a <code>package.json</code>, <code>.py</code> or <code>.mpy</code> file.</li>
+</ul>
+<p>Pipette installs the package and anything it depends on into the Pico's <code>/lib</code> folder.
+Your browser does the downloading, so the Pico doesn't need Wi-Fi. Then use it in your program:</p>
+<pre>import ssd1306</pre>
+
+<nav class="pager"><a href="definitions.html">← Finding where things are defined</a> · <a href="../help.html">All help</a> · <a href="troubleshooting.html">Troubleshooting →</a></nav>
+</body>
+</html>
