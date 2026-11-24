@@ -8,7 +8,7 @@ a "Run on your Pico" editor in their own lesson pages.
 
 - [Two Minute Tutorial](https://romilly.github.io/pico-pipette/docs/two-minute-tutorial.html): blink the LED and see how errors are shown
 - [Five Minute Tutorial](https://romilly.github.io/pico-pipette/docs/five-minute-tutorial.html): stop a program, look inside it, and make it run at power-up
-- [Pico Pipette in a minute](https://romilly.github.io/pico-pipette/docs/demo.html): a one-minute video
+- [Videos](https://romilly.github.io/pico-pipette/docs/demo.html): Pipette in a minute, and going to a definition
 
 ![Pico Pipette after a failed run: the failing line marked, the output, the error and the variables left behind](https://romilly.github.io/pico-pipette/docs/images/overview.png)
 

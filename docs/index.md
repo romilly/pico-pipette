@@ -20,6 +20,8 @@ These pages cover using it, putting it in your own web pages, and working on it.
   <a href="../demo/demo.mp4">Watch the one-minute demo</a>
 </video>
 
+[More videos](demo.md): tabs, hints and going to a definition.
+
 ## How-to guides
 
 - [Put MicroPython on your board](../help/micropython.html)

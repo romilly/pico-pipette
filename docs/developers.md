@@ -25,7 +25,7 @@ help.html       the user guide's index
 help/           the user guide's pages, and help.css
 check.html      the connection checker
 examples/       how other pages can use Pipette
-docs/           this documentation, published on GitHub Pages (docs/demo.md plays demo/demo.mp4)
+docs/           this documentation, published on GitHub Pages (docs/demo.md plays the videos in demo/)
 demo/           scripted demos and the demo player
 src/
   picolink.js     runs code on a Pico over Web Serial, using MicroPython's raw REPL

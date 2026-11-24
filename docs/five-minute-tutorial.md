@@ -8,6 +8,9 @@ and make your program run on its own whenever the Pico has power.
 Do the [Two Minute Tutorial](two-minute-tutorial.md) first, so you're connected to your Pico at
 **<https://romilly.github.io/pico-pipette/>**.
 
+On a board with no LED you can see, such as the Pimoroni Explorer or Presto, every step works the same way,
+but you won't see the LED change.
+
 ## 1. Run a program that doesn't stop
 
 Select everything in the editor (Ctrl-A, or Cmd-A on a Mac) and replace it with this program:
