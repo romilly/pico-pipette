@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: Running and stopping</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>Running and stopping</h1>
+
+<p><b>Run</b> sends the program in the editor to the Pico and runs it. Its output appears under <b>Output</b> as it arrives.
+<b>Stop</b> interrupts a program that is still running, such as one with a <code>while True:</code> loop.</p>
+<p>While a program is running, a <b>Type to your program</b> box appears under its output.
+If your program uses <code>input()</code>, type your answer there and press <kbd>Enter</kbd>. The Pico shows what you typed in the output.
+You can type before the program asks; it reads your line when it gets to <code>input()</code>.
+The same box appears under the REPL when a line you typed there is running.</p>
+<p>Each run starts afresh: variables from earlier runs are cleared, but files on the Pico are kept.
+Run always uses what's in the editor, not a file saved on the Pico.</p>
+
+<h2>Tips</h2>
+<ul>
+  <li>The <kbd>Tab</kbd> key indents by four spaces.</li>
+  <li>On a Raspberry Pi Pico or Pico 2, the LED on the board is <code>Pin("LED", Pin.OUT)</code>.</li>
+</ul>
+
+<nav class="pager"><a href="connecting.html">← Connecting</a> · <a href="../help.html">All help</a> · <a href="errors.html">When something goes wrong →</a></nav>
+</body>
+</html>

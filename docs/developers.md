@@ -21,10 +21,11 @@ To try the pages, run `python3 -m http.server 8000` and open <http://localhost:8
 
 ```
 index.html      the editor page (a <pipette-ide> with a heading)
-help.html       the user guide
+help.html       the user guide's index
+help/           the user guide's pages, and help.css
 check.html      the connection checker
 examples/       how other pages can use Pipette
-docs/           this documentation, published on GitHub Pages
+docs/           this documentation, published on GitHub Pages (docs/demo.md plays demo/demo.mp4)
 demo/           scripted demos and the demo player
 src/
   picolink.js     runs code on a Pico over Web Serial, using MicroPython's raw REPL
@@ -90,6 +91,6 @@ a test checks the first two match.
 ## Documentation
 
 These pages follow the [Divio documentation system](https://docs.divio.com/documentation-system/):
-tutorials, how-to guides, reference and explanation, kept separate. The user guide is `help.html`,
-so the editor can link to it. The screenshot on the front pages, `docs/images/overview.png`, is made by
+tutorials, how-to guides, reference and explanation, kept separate. The user guide is `help.html` and the pages in `help/`,
+plain HTML so the editor can link to it. The screenshot on the front pages, `docs/images/overview.png`, is made by
 `node scripts/screenshot.mjs docs/images/overview.png`, with MicroPython's WebAssembly build standing in for a Pico.

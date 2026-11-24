@@ -2,20 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pico Pipette: help</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 1.5rem auto 4rem; padding: 0 1rem; line-height: 1.6; color: #222; position: relative; }
-  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-  h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.2rem; }
-  h3 { font-size: 1rem; margin: 1.2rem 0 0.2rem; }
-  code { background: #f4f4f4; padding: 0 0.25rem; border-radius: 3px; font-size: 0.92em; }
-  pre { background: #f4f4f4; padding: 0.6rem 0.8rem; overflow: auto; }
-  nav { background: #f7f7f7; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.95rem; }
-  nav ol { margin: 0.25rem 0; padding-left: 1.2rem; columns: 2; }
-  .back { color: #555; }
-  .repo-link { position: absolute; top: 0.6rem; right: 1rem; line-height: 0; opacity: 0.45; transition: opacity 0.15s; }
-  .repo-link:hover, .repo-link:focus-visible { opacity: 1; }
-</style>
+<link rel="stylesheet" href="help/help.css">
+<script>
+  // This help used to be one page: send links to its old sections to their new pages
+  const OLD = { micropython: 'micropython', connect: 'connecting', run: 'running', errors: 'errors', repl: 'repl',
+    variables: 'repl#variables', files: 'files', tabs: 'tabs', definitions: 'definitions', packages: 'packages',
+    trouble: 'troubleshooting' };
+  const moved = OLD[location.hash.slice(1)];
+  if (moved) location.replace(`help/${moved.replace(/^([a-z]+)/, '$1.html')}`);
+</script>
 </head>
 <body>
 <a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
@@ -23,180 +20,42 @@
 <h1>Pico Pipette help</h1>
 <p class="back"><a href="index.html">Back to the editor</a> · <a href="check.html">Check your connection</a> · <a href="docs/">Tutorials and documentation</a></p>
 
-<nav>
-  <ol>
-    <li><a href="#need">What you need</a></li>
-    <li><a href="#micropython">Putting MicroPython on a Pico</a></li>
-    <li><a href="#connect">Connecting</a></li>
-    <li><a href="#run">Running and stopping</a></li>
-    <li><a href="#errors">When something goes wrong</a></li>
-    <li><a href="#repl">The REPL</a></li>
-    <li><a href="#variables">Variables</a></li>
-    <li><a href="#files">Files</a></li>
-    <li><a href="#tabs">Tabs</a></li>
-    <li><a href="#definitions">Finding where things are defined</a></li>
-    <li><a href="#packages">Packages</a></li>
-    <li><a href="#trouble">Troubleshooting</a></li>
-    <li><a href="#privacy">Privacy</a></li>
-  </ol>
-</nav>
-
 <h2 id="need">What you need</h2>
 <ul>
-  <li>A Raspberry Pi Pico, Pico W, Pico 2 or Pico 2 W with MicroPython on it.</li>
+  <li>A Raspberry Pi Pico or Pico 2, with or without wireless, or a board built around the same chip,
+    such as the Pimoroni Explorer or Presto. It needs <a href="help/micropython.html">MicroPython on it</a>.
+    In this help, “Pico” means any of these boards.</li>
   <li>A USB cable that carries data. Some cables only carry power; they will charge a phone, but your computer won't see the Pico.</li>
   <li>Chrome, Edge, or Firefox 151 or later, on a desktop or laptop computer.</li>
 </ul>
+<p>New to Pipette? Try the <a href="docs/two-minute-tutorial.html">Two Minute Tutorial</a> first.</p>
 
-<h2 id="micropython">Putting MicroPython on a Pico</h2>
-<ol>
-  <li>Download the MicroPython <code>.uf2</code> file for your board from
-    <a href="https://micropython.org/download/" target="_blank" rel="noopener">micropython.org</a>.
-    Each board (Pico, Pico W, Pico 2, Pico 2 W) has its own file.</li>
-  <li>Hold down the <b>BOOTSEL</b> button on the Pico while you plug it in. A drive called <code>RPI-RP2</code>
-    (or <code>RP2350</code> on a Pico 2) appears on your computer.</li>
-  <li>Copy the <code>.uf2</code> file onto that drive. The drive disappears and the Pico restarts, running MicroPython.</li>
-</ol>
-<p>This replaces the firmware the Pico was running before.</p>
-
-<h2 id="connect">Connecting</h2>
-<p>Click <b>Connect</b> and choose your Pico from the list. The list only shows Raspberry Pi boards.
-The first time, your browser asks whether this site may use your serial ports; say yes.
-Once you're connected, the files on the Pico appear on the left.</p>
-<p>After the first time, Pipette reconnects to the same Pico without asking.
-To choose a different board, hold <kbd>Shift</kbd> while you click <b>Connect</b>.</p>
-<p>The dot beside the button shows whether you're connected: filled in green when you are, hollow when you aren't.</p>
-<p>While you're connected, Pipette holds on to the Pico's USB connection, and no other program can use it.
-When you've finished, click <b>Disconnect</b> to let it go, for example so that Thonny or another tab can use the Pico.
-If a program is still running, Disconnect stops it first.</p>
-
-<h2 id="run">Running and stopping</h2>
-<p><b>Run</b> sends the program in the editor to the Pico and runs it. Its output appears under <b>Output</b> as it arrives.
-<b>Stop</b> interrupts a program that is still running, such as one with a <code>while True:</code> loop.</p>
-<p>While a program is running, a <b>Type to your program</b> box appears under its output.
-If your program uses <code>input()</code>, type your answer there and press <kbd>Enter</kbd>. The Pico shows what you typed in the output.
-You can type before the program asks; it reads your line when it gets to <code>input()</code>.
-The same box appears under the REPL when a line you typed there is running.</p>
-<p>Each run starts afresh: variables from earlier runs are cleared, but files on the Pico are kept.
-Run always uses what's in the editor, not a file saved on the Pico.</p>
-
-<h3>Tips</h3>
-<ul>
-  <li>The <kbd>Tab</kbd> key indents by four spaces.</li>
-  <li>The on-board LED is <code>Pin("LED", Pin.OUT)</code> on every kind of Pico.</li>
+<h2>Getting started</h2>
+<ul class="topics">
+  <li><a href="help/micropython.html">Putting MicroPython on your board</a></li>
+  <li><a href="help/connecting.html">Connecting</a>, and letting go of the Pico so other programs can use it</li>
 </ul>
 
-<h2 id="errors">When something goes wrong</h2>
-<p>If your program stops with an error, Pipette shows you where:</p>
-<ul>
-  <li>the line's number turns red and the line is selected in the editor;</li>
-  <li>a message such as <b>Line 7</b>: <code>NameError: name 'leed' isn't defined</code> appears below the output.
-    Click the line number to jump back to it;</li>
-  <li>the full message from MicroPython (the <i>traceback</i>) is shown underneath.</li>
-</ul>
-<p>If the error happens inside one of your functions, the line inside the function is the one marked.
-Errors inside libraries are traced back to the line of your program that called them.
-When you press <b>Stop</b>, the line the program had reached is marked in the same way.</p>
-
-<h2 id="repl">The REPL</h2>
-<p>The <b>REPL</b> box under the output lets you type Python and run it on the Pico straight away, a line at a time.
-Type an expression, such as <code>2 ** 10</code>, and press <kbd>Enter</kbd> to see its value.</p>
-<ul>
-  <li>The REPL shares variables with the program you last ran, so after <b>Run</b> or <b>Stop</b> you can look at them,
-    change them, or call your functions. The Variables table updates after each line.</li>
-  <li>After a line ending in <code>:</code>, or with a bracket still open, <kbd>Enter</kbd> starts a new line
-    (indented for you). Press <kbd>Enter</kbd> on an empty line to run the whole block.
-    <kbd>Shift</kbd>+<kbd>Enter</kbd> always starts a new line.</li>
-  <li><kbd>↑</kbd> and <kbd>↓</kbd> bring back earlier lines. <b>Stop</b> interrupts a line that's still running.</li>
-  <li>Running a program starts afresh, clearing the REPL's variables too.</li>
+<h2>Writing and running programs</h2>
+<ul class="topics">
+  <li><a href="help/running.html">Running and stopping</a>, and typing to a program that uses <code>input()</code></li>
+  <li><a href="help/errors.html">When something goes wrong</a>: how Pipette shows where the error is</li>
+  <li><a href="help/repl.html">The REPL and variables</a>: looking inside your program after it stops</li>
+  <li><a href="help/tabs.html">Tabs and programs in several files</a></li>
+  <li><a href="help/definitions.html">Finding where things are defined</a></li>
 </ul>
 
-<h2 id="variables">Variables</h2>
-<p>When your program finishes, fails or is stopped, the <b>Variables</b> table shows the variables it left behind,
-with their types and values. After pressing Stop in a loop, for example, you can see how far the loop had got.</p>
-<ul>
-  <li>Only variables at the top level of your program are shown, not those inside functions.</li>
-  <li>Modules, functions and classes are left out, and long values are shortened.</li>
+<h2>Files and packages</h2>
+<ul class="topics">
+  <li><a href="help/files.html">Files</a> on your computer and on the Pico, and making a program run at power-up</li>
+  <li><a href="help/packages.html">Packages</a>, such as drivers for displays and sensors</li>
 </ul>
 
-<h2 id="files">Files</h2>
-<h3>On your computer</h3>
-<p><b>Open…</b> opens a file in a new tab. <b>Save to computer</b> saves the tab showing, using the name in the box beside it.
-In Chrome and Edge it saves back to the file you opened; in other browsers it downloads a copy.</p>
-
-<h3>On the Pico</h3>
-<ul>
-  <li>Click a file in the <b>Pico files</b> panel to open it in a new tab (or go to its tab, if it's open already).
-    Click a folder to go into it, and <b>..</b> to come back.</li>
-  <li><b>Save to Pico</b> saves the tab showing into the folder shown, using the name in the box.</li>
-  <li><b>Save as main.py</b> saves it as <code>/main.py</code>. The Pico runs <code>main.py</code> whenever it powers up,
-    so your program will run on its own, even from a phone charger or battery. Connecting with Pipette stops it again.</li>
-  <li><b>✕</b> (shown when you point at a file) deletes it, after asking. This can't be undone. Folders must be empty before they can be deleted.</li>
-  <li><b>New folder</b> creates a folder, and <b>↻</b> refreshes the list.</li>
+<h2>When it doesn't work</h2>
+<ul class="topics">
+  <li><a href="help/troubleshooting.html">Troubleshooting</a></li>
+  <li>The <a href="check.html">connection checker</a> tests each step and tells you what's wrong</li>
 </ul>
-<h2 id="tabs">Tabs</h2>
-<p>Each open file has its own tab above the editor, so you can look at several files and switch between them.
-Each tab keeps its own code, undo history and error marks.</p>
-<ul>
-  <li>Click a tab to show it. <b>+</b> starts a new, empty file: type its name in the box beside <b>Open…</b>.</li>
-  <li>A <b>●</b> on a tab means it has changes that aren't saved. <b>×</b> closes a tab, asking first if its changes aren't saved.</li>
-  <li>The name box, <b>Save to computer</b>, <b>Save to Pico</b>, <b>Save as main.py</b> and <b>Run</b> all work on the tab showing.</li>
-</ul>
-<h3>Programs in more than one file</h3>
-<p>If <code>main.py</code> says <code>import helpers</code>, the Pico runs the <code>helpers.py</code> that's saved on the Pico,
-not what's in its tab. So when you change <code>helpers.py</code>, use <b>Save to Pico</b> on its tab before you run <code>main.py</code>.
-If you forget, Pipette reminds you when you click <b>Run</b>.</p>
-<p>If an error happens inside a file that's open in another tab, Pipette switches to that tab and marks the line.</p>
-
-<h2 id="definitions">Finding where things are defined</h2>
-<p>Rest the pointer on a name, such as a function or variable, and Pipette tells you which line defines it.
-<b>Ctrl-click</b> the name (<b>Cmd-click</b> on a Mac), or put the cursor in it and press <b>F12</b>, to go there.</p>
-<ul>
-  <li>It follows your own code: functions, classes, variables, function parameters, loop variables and <code>self.</code> attributes.
-    Inside a function, its own variables come first, as they do when Python runs it.</li>
-  <li>If the name comes from another file, as <code>double</code> does after <code>from helpers import double</code>
-    or in <code>helpers.double(2)</code>, Pipette opens that file at the definition. It uses the file's tab if it's open,
-    or reads it from the Pico (from the main folder, then <code>/lib</code>), so connect first.</li>
-  <li>Some names have no Python file to show: things built into MicroPython, like <code>print</code> or <code>machine</code>,
-    and packages installed in compiled form (<code>.mpy</code> files). Pipette says so.</li>
-  <li>For something like <code>led.on()</code>, Pipette can't tell where <code>on</code> comes from without running the
-    program, because it depends on what <code>led</code> holds.</li>
-</ul>
-
-<h2 id="packages">Packages</h2>
-<p>Packages add extra modules, such as drivers for displays and sensors. Type a name in <b>Install a package</b> and click <b>Install</b>:</p>
-<ul>
-  <li>a name from <a href="https://github.com/micropython/micropython-lib" target="_blank" rel="noopener">micropython-lib</a>, such as <code>ssd1306</code>;</li>
-  <li>a GitHub repository, such as <code>github:org/repo</code> (also <code>gitlab:</code> and <code>codeberg:</code>);</li>
-  <li>or the web address of a <code>package.json</code>, <code>.py</code> or <code>.mpy</code> file.</li>
-</ul>
-<p>Pipette installs the package and anything it depends on into the Pico's <code>/lib</code> folder.
-Your browser does the downloading, so the Pico doesn't need Wi-Fi. Then use it in your program:</p>
-<pre>import ssd1306</pre>
-
-<h2 id="trouble">Troubleshooting</h2>
-<p>The <a href="check.html">connection checker</a> tests each step and tells you what's wrong.</p>
-
-<h3>The list of ports is empty</h3>
-<ul>
-  <li>Another browser tab or program (such as Thonny) may be using the Pico. Close it, then unplug the Pico and plug it back in.</li>
-  <li>The cable may only carry power. Try another one.</li>
-  <li>The Pico may not have MicroPython on it, or may be in BOOTSEL mode (showing up as a drive). See <a href="#micropython">Putting MicroPython on a Pico</a>.</li>
-</ul>
-
-<h3>The Pico is listed but won't connect</h3>
-<ul>
-  <li>Close any other tab or program using it, then unplug it and plug it back in.</li>
-  <li>On Linux, your user may need permission to use serial ports. Run this, then log out and back in:
-    <pre>sudo usermod -aG dialout $USER</pre></li>
-</ul>
-
-<h3>Connected, but programs don't run</h3>
-<p>The board may be running something other than MicroPython. The connection checker will tell you; if so,
-<a href="#micropython">put MicroPython on it</a>.</p>
-
-<h3>"Pico disconnected"</h3>
-<p>The Pico was unplugged or restarted. Plug it back in and click <b>Connect</b> again.</p>
 
 <h2 id="privacy">Privacy</h2>
 <p>Pico Pipette runs entirely in your browser and has no server of its own. Your programs and files go only between

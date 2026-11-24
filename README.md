@@ -4,18 +4,20 @@ Program, debug and manage a Raspberry Pi Pico running MicroPython from a web bro
 It's for beginners learning MicroPython, for the people teaching them, and for course authors who want
 a "Run on your Pico" editor in their own lesson pages.
 
-![Pico Pipette after a failed run: the failing line marked, the output, the error and the variables left behind](https://romilly.github.io/pico-pipette/docs/images/overview.png)
-
-Plug in your Pico, open **<https://romilly.github.io/pico-pipette/>** and click **Connect**.
-It works in Chrome, Edge, and Firefox 151 or later, on desktop and laptop computers.
-
-You can run code and stop it, see the failing line marked when it goes wrong, look at the variables it left behind,
-try things in a REPL, manage the Pico's files, work on several files in tabs, and install packages without Wi-Fi.
-
 ## Get started
 
 - [Two Minute Tutorial](https://romilly.github.io/pico-pipette/docs/two-minute-tutorial.html): blink the LED and see how errors are shown
 - [Five Minute Tutorial](https://romilly.github.io/pico-pipette/docs/five-minute-tutorial.html): stop a program, look inside it, and make it run at power-up
+- [Pico Pipette in a minute](https://romilly.github.io/pico-pipette/docs/demo.html): a one-minute video
+
+![Pico Pipette after a failed run: the failing line marked, the output, the error and the variables left behind](https://romilly.github.io/pico-pipette/docs/images/overview.png)
+
+Plug in your board, open **<https://romilly.github.io/pico-pipette/>** and click **Connect**.
+You'll need a Raspberry Pi Pico or Pico 2, or a board built around the same chip, such as the Pimoroni Explorer or Presto,
+running MicroPython; and Chrome, Edge, or Firefox 151 or later, on a desktop or laptop computer.
+
+You can run code and stop it, see the failing line marked when it goes wrong, look at the variables it left behind,
+try things in a REPL, manage the board's files, work on several files in tabs, and install packages without Wi-Fi.
 
 ## Put it in your own pages
 

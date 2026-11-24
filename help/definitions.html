@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: Finding where things are defined</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>Finding where things are defined</h1>
+
+<p>Rest the pointer on a name, such as a function or variable, and Pipette tells you which line defines it.
+<b>Ctrl-click</b> the name (<b>Cmd-click</b> on a Mac), or put the cursor in it and press <b>F12</b>, to go there.</p>
+<ul>
+  <li>It follows your own code: functions, classes, variables, function parameters, loop variables and <code>self.</code> attributes.
+    Inside a function, its own variables come first, as they do when Python runs it.</li>
+  <li>If the name comes from another file, as <code>double</code> does after <code>from helpers import double</code>
+    or in <code>helpers.double(2)</code>, Pipette opens that file at the definition. It uses the file's tab if it's open,
+    or reads it from the Pico (from the main folder, then <code>/lib</code>), so connect first.</li>
+  <li>Some names have no Python file to show: things built into MicroPython, like <code>print</code> or <code>machine</code>,
+    and packages installed in compiled form (<code>.mpy</code> files). Pipette says so.</li>
+  <li>For something like <code>led.on()</code>, Pipette can't tell where <code>on</code> comes from without running the
+    program, because it depends on what <code>led</code> holds.</li>
+</ul>
+
+<nav class="pager"><a href="tabs.html">← Tabs and programs in several files</a> · <a href="../help.html">All help</a> · <a href="packages.html">Packages →</a></nav>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: Tabs and programs in several files</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>Tabs and programs in several files</h1>
+
+<p>Each open file has its own tab above the editor, so you can look at several files and switch between them.
+Each tab keeps its own code, undo history and error marks.</p>
+<ul>
+  <li>Click a tab to show it. <b>+</b> starts a new, empty file: type its name in the box beside <b>Open…</b>.</li>
+  <li>A <b>●</b> on a tab means it has changes that aren't saved. <b>×</b> closes a tab, asking first if its changes aren't saved.</li>
+  <li>The name box, <b>Save to computer</b>, <b>Save to Pico</b>, <b>Save as main.py</b> and <b>Run</b> all work on the tab showing.</li>
+</ul>
+<h2>Programs in more than one file</h2>
+<p>If <code>main.py</code> says <code>import helpers</code>, the Pico runs the <code>helpers.py</code> that's saved on the Pico,
+not what's in its tab. So when you change <code>helpers.py</code>, use <b>Save to Pico</b> on its tab before you run <code>main.py</code>.
+If you forget, Pipette reminds you when you click <b>Run</b>.</p>
+<p>If an error happens inside a file that's open in another tab, Pipette switches to that tab and marks the line.</p>
+
+<nav class="pager"><a href="files.html">← Files</a> · <a href="../help.html">All help</a> · <a href="definitions.html">Finding where things are defined →</a></nav>
+</body>
+</html>

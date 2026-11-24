@@ -6,8 +6,10 @@ In two minutes you'll run a program on your Pico from your browser, change it, a
 
 You need:
 
-- a Raspberry Pi Pico (any model) with MicroPython on it. If it hasn't got MicroPython yet,
-  [put MicroPython on it](../help.html#micropython) first;
+- a Raspberry Pi Pico or Pico 2, with or without wireless, with MicroPython on it. If it hasn't got MicroPython yet,
+  [put MicroPython on it](../help/micropython.html) first.
+  Pipette also works with boards built around the same chip, such as the Pimoroni Explorer and Presto,
+  but this tutorial blinks the Pico's own LED, which those boards may not have;
 - a USB cable that carries data, not just power;
 - Chrome, Edge, or Firefox 151 or later, on a desktop or laptop computer.
 

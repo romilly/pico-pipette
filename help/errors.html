@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: When something goes wrong</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>When something goes wrong</h1>
+
+<p>If your program stops with an error, Pipette shows you where:</p>
+<ul>
+  <li>the line's number turns red and the line is selected in the editor;</li>
+  <li>a message such as <b>Line 7</b>: <code>NameError: name 'leed' isn't defined</code> appears below the output.
+    Click the line number to jump back to it;</li>
+  <li>the full message from MicroPython (the <i>traceback</i>) is shown underneath.</li>
+</ul>
+<p>If the error happens inside one of your functions, the line inside the function is the one marked.
+Errors inside libraries are traced back to the line of your program that called them.
+When you press <b>Stop</b>, the line the program had reached is marked in the same way.</p>
+
+<nav class="pager"><a href="running.html">← Running and stopping</a> · <a href="../help.html">All help</a> · <a href="repl.html">The REPL and variables →</a></nav>
+</body>
+</html>

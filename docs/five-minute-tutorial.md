@@ -61,6 +61,6 @@ To make the Pico stop running it at power-up, delete `main.py` from the **Pico f
 
 ## What next
 
-- Split a bigger program into [several files](../help.html#tabs), each in its own tab.
-- [Install a package](../help.html#packages), such as a driver for a display.
+- Split a bigger program into [several files](../help/tabs.html), each in its own tab.
+- [Install a package](../help/packages.html), such as a driver for a display.
 - The [user guide](../help.html) describes everything else the editor can do.

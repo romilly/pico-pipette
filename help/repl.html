@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico Pipette help: The REPL and variables</title>
+<link rel="stylesheet" href="help.css">
+</head>
+<body>
+<a class="repo-link" href="https://github.com/romilly/pico-pipette" title="Pico Pipette's source code on GitHub" aria-label="Pico Pipette on GitHub">
+  <img src="../resources/github-mark.svg" alt="" width="22" height="22"></a>
+<p class="back"><a href="../help.html">Pico Pipette help</a> · <a href="../index.html">Back to the editor</a></p>
+<h1>The REPL and variables</h1>
+
+<h2 id="repl">The REPL</h2>
+<p>The <b>REPL</b> box under the output lets you type Python and run it on the Pico straight away, a line at a time.
+Type an expression, such as <code>2 ** 10</code>, and press <kbd>Enter</kbd> to see its value.</p>
+<ul>
+  <li>The REPL shares variables with the program you last ran, so after <b>Run</b> or <b>Stop</b> you can look at them,
+    change them, or call your functions. The Variables table updates after each line.</li>
+  <li>After a line ending in <code>:</code>, or with a bracket still open, <kbd>Enter</kbd> starts a new line
+    (indented for you). Press <kbd>Enter</kbd> on an empty line to run the whole block.
+    <kbd>Shift</kbd>+<kbd>Enter</kbd> always starts a new line.</li>
+  <li><kbd>↑</kbd> and <kbd>↓</kbd> bring back earlier lines. <b>Stop</b> interrupts a line that's still running.</li>
+  <li>Running a program starts afresh, clearing the REPL's variables too.</li>
+</ul>
+
+<h2 id="variables">Variables</h2>
+<p>When your program finishes, fails or is stopped, the <b>Variables</b> table shows the variables it left behind,
+with their types and values. After pressing Stop in a loop, for example, you can see how far the loop had got.</p>
+<ul>
+  <li>Only variables at the top level of your program are shown, not those inside functions.</li>
+  <li>Modules, functions and classes are left out, and long values are shortened.</li>
+</ul>
+
+<nav class="pager"><a href="errors.html">← When something goes wrong</a> · <a href="../help.html">All help</a> · <a href="files.html">Files →</a></nav>
+</body>
+</html>

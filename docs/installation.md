@@ -7,7 +7,8 @@
 There's nothing to install. Open **<https://romilly.github.io/pico-pipette/>** in Chrome, Edge, or Firefox 151
 or later, on a desktop or laptop computer.
 
-Your Pico needs MicroPython on it: see [Putting MicroPython on a Pico](../help.html#micropython).
+You'll need a Raspberry Pi Pico or Pico 2, or a board built around the same chip, such as the Pimoroni Explorer
+or Presto, with MicroPython on it: see [Putting MicroPython on your board](../help/micropython.html).
 
 ## Running your own copy
 
